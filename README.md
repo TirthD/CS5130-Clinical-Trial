@@ -16,6 +16,6 @@ and explains eligibility criteria in plain language.
 3. Install dependencies: `pip install -r requirements.txt`
 
 ## Team
-- Member 1
-- Member 2
-- Member 3
+- Tirth
+- Achintya
+- Yajur
