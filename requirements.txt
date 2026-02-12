@@ -6,6 +6,7 @@ python-dotenv>=1.0.0      # Load .env variables
 # ---- LLM / Agent ----
 # openai>=1.12.0            # OpenAI API (or swap for your LLM provider)
 # anthropic>=0.18.0       # Uncomment if using Claude as the LLM
+google-genai>=1.0.0
 
 # ---- Data Processing ----
 geopy>=2.4.0              # Geocoding & distance calculation (city → lat/lon)
