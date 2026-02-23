@@ -1,11 +1,18 @@
+"""
+Trial Searcher Tool
+High-level search wrapper that combines medical term mapping
+with the ClinicalTrials.gov API client. Adds filtering, sorting,
+and result-limiting logic on top of raw API calls.
+"""
+
+import re
 import logging
 from typing import Optional
 from dataclasses import dataclass, field
 
-# Internal API layer (already built)
 from src.api.client import ClinicalTrialsClient
 from src.api.models import Trial
-from src.api.exceptions import APIError, RateLimitError
+from src.api.exceptions import ClinicalTrialsAPIError, RateLimitError
 
 logger = logging.getLogger(__name__)
 
@@ -50,8 +57,8 @@ class SearchResult:
     """Wraps search output with metadata for the agent."""
     trials: list[Trial] = field(default_factory=list)
     total_found: int = 0
-    query_used: str = ""       # the actual term sent to API (after mapping)
-    original_query: str = ""   # what the user typed
+    query_used: str = ""
+    original_query: str = ""
     filters_applied: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
 
@@ -67,11 +74,7 @@ class TrialSearcher:
         result = searcher.search(SearchParams(condition="diabetes", location="Boston"))
     """
 
-    def __init__(
-        self,
-        api_client: ClinicalTrialsClient,
-        term_mapper=None,
-    ):
+    def __init__(self, api_client: ClinicalTrialsClient, term_mapper=None):
         self.client = api_client
         self.map_term = term_mapper or _default_term_mapper
 
@@ -120,12 +123,13 @@ class TrialSearcher:
     ) -> list[Trial]:
         """Call the API client and handle errors gracefully."""
         try:
-            trials = self.client.search_studies(
+            api_result = self.client.search_trials(
                 condition=condition,
                 location=params.location,
                 status=params.status,
                 page_size=params.page_size,
             )
+            trials = api_result.trials
             logger.info(f"API returned {len(trials)} trials for '{condition}'")
             return trials
 
@@ -135,7 +139,7 @@ class TrialSearcher:
             result.errors.append(msg)
             return []
 
-        except APIError as e:
+        except ClinicalTrialsAPIError as e:
             msg = f"API error during search: {e}"
             logger.error(msg)
             result.errors.append(msg)
@@ -153,7 +157,10 @@ class TrialSearcher:
         """Double-check status filter (API should handle this, but verify)."""
         if not status:
             return trials
-        filtered = [t for t in trials if t.status and t.status.upper() == status.upper()]
+        filtered = [
+            t for t in trials
+            if t.overall_status and t.overall_status.upper() == status.upper()
+        ]
         if len(filtered) < len(trials):
             dropped = len(trials) - len(filtered)
             logger.debug(f"Status filter dropped {dropped} trials")
@@ -189,7 +196,7 @@ class TrialSearcher:
         if sort_by == "date":
             return sorted(
                 trials,
-                key=lambda t: t.last_updated or "",
+                key=lambda t: t.start_date or "",
                 reverse=True,
             )
         # "relevance" = keep API's original ordering
@@ -199,13 +206,26 @@ class TrialSearcher:
     # ── Helpers ────────────────────────────────────────────────────
 
     @staticmethod
+    def _parse_age_string(age_str: str | None) -> int | None:
+        """
+        Parse age strings like '18 Years', '65 Years' into integers.
+        Returns None if unparseable.
+        """
+        if not age_str:
+            return None
+        match = re.search(r"(\d+)", age_str)
+        return int(match.group(1)) if match else None
+
+    @staticmethod
     def _age_in_range(trial: Trial, age: int) -> bool:
         """Check if age falls within trial's min/max age range."""
-        elig = getattr(trial, "eligibility", None)
+        elig = trial.eligibility
         if not elig:
             return True  # no info = don't exclude
-        min_age = getattr(elig, "min_age", None)
-        max_age = getattr(elig, "max_age", None)
+
+        min_age = TrialSearcher._parse_age_string(elig.minimum_age)
+        max_age = TrialSearcher._parse_age_string(elig.maximum_age)
+
         if min_age is not None and age < min_age:
             return False
         if max_age is not None and age > max_age:
@@ -215,10 +235,10 @@ class TrialSearcher:
     @staticmethod
     def _gender_matches(trial: Trial, gender: str) -> bool:
         """Check if trial accepts the user's gender."""
-        elig = getattr(trial, "eligibility", None)
+        elig = trial.eligibility
         if not elig:
             return True
-        trial_gender = getattr(elig, "gender", "all")
+        trial_gender = elig.gender
         if not trial_gender or trial_gender.lower() == "all":
             return True
         return trial_gender.lower() == gender.lower()
