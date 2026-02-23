@@ -1,8 +1,15 @@
+"""
+Clinical Trial Finder Agent
+Main orchestrator that uses Google Gemini to understand user queries,
+call tools in sequence, and assemble safe, cited responses.
+"""
+
 import json
 import logging
 from typing import Any
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 from config import GEMINI_MODEL, GEMINI_API_KEY
 from src.agent.prompts import (
@@ -38,23 +45,30 @@ class ClinicalTrialAgent:
         self.registry = registry
         self._configure_gemini()
         self._nct_ids_this_query: set[str] = set()
-        self._conversation_history: list[dict] = []
+        self._conversation_history: list[types.Content] = []
 
     def _configure_gemini(self):
-        """Set up the Gemini model with system prompt and tool declarations."""
-        genai.configure(api_key=GEMINI_API_KEY)
+        """Set up the Gemini client and model config."""
+        self.client = genai.Client(api_key=GEMINI_API_KEY)
+        self.model_name = GEMINI_MODEL
 
-        self.model = genai.GenerativeModel(
-            model_name=GEMINI_MODEL,
-            system_instruction=SYSTEM_PROMPT,
-            tools=self._build_gemini_tools(),
-        )
-        logger.info(f"Gemini model configured: {GEMINI_MODEL}")
+        # Build tool declarations in google.genai format
+        self.tools = self._build_gemini_tools()
 
-    def _build_gemini_tools(self) -> list:
-        """Convert our tool declarations into Gemini's expected format."""
+        logger.info(f"Gemini model configured: {self.model_name}")
+
+    def _build_gemini_tools(self) -> list[types.Tool]:
+        """Convert our tool declarations into google.genai Tool format."""
         declarations = self.registry.get_declarations()
-        return [{"function_declarations": declarations}]
+        function_declarations = []
+        for decl in declarations:
+            fd = types.FunctionDeclaration(
+                name=decl["name"],
+                description=decl["description"],
+                parameters=decl["parameters"],
+            )
+            function_declarations.append(fd)
+        return [types.Tool(function_declarations=function_declarations)]
 
     # ── Main Entry Point ───────────────────────────────────────────
 
@@ -78,16 +92,31 @@ class ClinicalTrialAgent:
         # Reset per-query state
         self._nct_ids_this_query = set()
 
-        # Step 2: Start conversation with Gemini
+        # Step 2: Build messages and send to Gemini
         try:
-            chat = self.model.start_chat(history=self._conversation_history)
-            response = chat.send_message(user_query)
+            # Build the contents list: history + new user message
+            contents = list(self._conversation_history)
+            contents.append(
+                types.Content(
+                    role="user",
+                    parts=[types.Part.from_text(text=user_query)],
+                )
+            )
+
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    system_instruction=SYSTEM_PROMPT,
+                    tools=self.tools,
+                ),
+            )
         except Exception as e:
             logger.error(f"Gemini API error: {e}", exc_info=True)
             return self._error_response("connecting to the AI model")
 
         # Step 3: Tool call loop — Gemini may request multiple tools
-        final_text = self._handle_tool_loop(chat, response)
+        final_text = self._handle_tool_loop(contents, response)
 
         # Step 4: Safety post-check on final response
         final_text = self._apply_safety_checks(final_text)
@@ -99,7 +128,7 @@ class ClinicalTrialAgent:
 
     # ── Tool Call Loop ─────────────────────────────────────────────
 
-    def _handle_tool_loop(self, chat, response) -> str:
+    def _handle_tool_loop(self, contents: list, response) -> str:
         """
         Process Gemini's response, executing tool calls iteratively
         until Gemini returns a final text response.
@@ -115,15 +144,36 @@ class ClinicalTrialAgent:
                 return self._extract_text(response)
 
             # Execute each tool call and collect results
-            tool_results = []
-            for call in tool_calls:
-                result = self._execute_tool_call(call)
-                tool_results.append(result)
+            function_responses = []
+            for fc in tool_calls:
+                result = self._execute_tool_call(fc)
+                function_responses.append(
+                    types.Part.from_function_response(
+                        name=fc.name,
+                        response=result,
+                    )
+                )
 
-            # Send tool results back to Gemini
+            # Append the model's response (with function calls) to contents
+            contents.append(response.candidates[0].content)
+
+            # Append tool results as a new content
+            contents.append(
+                types.Content(
+                    role="user",
+                    parts=function_responses,
+                )
+            )
+
+            # Send updated contents back to Gemini
             try:
-                response = chat.send_message(
-                    self._format_tool_results(tool_calls, tool_results)
+                response = self.client.models.generate_content(
+                    model=self.model_name,
+                    contents=contents,
+                    config=types.GenerateContentConfig(
+                        system_instruction=SYSTEM_PROMPT,
+                        tools=self.tools,
+                    ),
                 )
             except Exception as e:
                 logger.error(f"Gemini error after tool results: {e}", exc_info=True)
@@ -138,8 +188,11 @@ class ClinicalTrialAgent:
         """Extract function calls from Gemini's response."""
         calls = []
         try:
-            for part in response.candidates[0].content.parts:
-                if hasattr(part, "function_call") and part.function_call:
+            parts = response.candidates[0].content.parts
+            if not parts:
+                return calls
+            for part in parts:
+                if part.function_call:
                     calls.append(part.function_call)
         except (IndexError, AttributeError) as e:
             logger.debug(f"No tool calls found in response: {e}")
@@ -148,10 +201,19 @@ class ClinicalTrialAgent:
     def _extract_text(self, response) -> str:
         """Extract text content from Gemini's response."""
         try:
+            # Try the .text shortcut first
+            if response.text:
+                return response.text
+        except (ValueError, AttributeError):
+            pass
+
+        try:
             parts = response.candidates[0].content.parts
+            if not parts:
+                return ""
             text_parts = []
             for part in parts:
-                if hasattr(part, "text") and part.text:
+                if part.text:
                     text_parts.append(part.text)
             return "\n".join(text_parts) if text_parts else ""
         except (IndexError, AttributeError) as e:
@@ -188,22 +250,6 @@ class ClinicalTrialAgent:
                 "error": build_tool_error_message(f"running {name}"),
             }
 
-    def _format_tool_results(
-        self, calls: list, results: list[dict]
-    ) -> list:
-        """Format tool results for sending back to Gemini."""
-        parts = []
-        for call, result in zip(calls, results):
-            parts.append(
-                genai.protos.Part(
-                    function_response=genai.protos.FunctionResponse(
-                        name=call.name,
-                        response=result,
-                    )
-                )
-            )
-        return parts
-
     def _track_nct_ids(self, tool_name: str, result: Any):
         """
         Extract NCT IDs from tool results so we can verify
@@ -216,8 +262,9 @@ class ClinicalTrialAgent:
             # Handle SearchResult from trial_searcher
             if hasattr(result, "trials"):
                 for trial in result.trials:
-                    if hasattr(trial, "nct_id") and trial.nct_id:
-                        self._nct_ids_this_query.add(trial.nct_id)
+                    nct_id = getattr(trial, "nct_id", None)
+                    if nct_id:
+                        self._nct_ids_this_query.add(nct_id)
             # Handle raw list of trials
             elif isinstance(result, list):
                 for item in result:
@@ -235,6 +282,10 @@ class ClinicalTrialAgent:
     @staticmethod
     def _serialize_result(result: Any) -> Any:
         """Convert tool result to JSON-serializable format for Gemini."""
+        # Pydantic model
+        if hasattr(result, "model_dump"):
+            return result.model_dump()
+
         # Dataclass with a to_dict method
         if hasattr(result, "to_dict"):
             return result.to_dict()
@@ -286,10 +337,16 @@ class ClinicalTrialAgent:
         Keeps last N exchanges to avoid context overflow.
         """
         self._conversation_history.append(
-            {"role": "user", "parts": [user_query]}
+            types.Content(
+                role="user",
+                parts=[types.Part.from_text(text=user_query)],
+            )
         )
         self._conversation_history.append(
-            {"role": "model", "parts": [agent_response]}
+            types.Content(
+                role="model",
+                parts=[types.Part.from_text(text=agent_response)],
+            )
         )
 
         # Keep last 10 exchanges (20 messages) to stay within context limits

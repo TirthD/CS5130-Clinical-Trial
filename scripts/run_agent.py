@@ -37,6 +37,8 @@ def setup_logging(verbose: bool = False):
     # Quiet down noisy libraries
     logging.getLogger("urllib3").setLevel(logging.WARNING)
     logging.getLogger("google").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
+    logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
 def validate_environment():
