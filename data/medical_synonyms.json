@@ -1,0 +1,226 @@
+{
+  "heart attack": {
+    "preferred": "myocardial infarction",
+    "alternatives": ["MI", "acute myocardial infarction", "STEMI", "NSTEMI"]
+  },
+  "high blood pressure": {
+    "preferred": "hypertension",
+    "alternatives": ["elevated blood pressure", "HTN"]
+  },
+  "low blood pressure": {
+    "preferred": "hypotension",
+    "alternatives": ["low BP"]
+  },
+  "type 2 diabetes": {
+    "preferred": "diabetes mellitus type 2",
+    "alternatives": ["T2DM", "type II diabetes", "non-insulin dependent diabetes mellitus", "NIDDM"]
+  },
+  "type 1 diabetes": {
+    "preferred": "diabetes mellitus type 1",
+    "alternatives": ["T1DM", "type I diabetes", "insulin dependent diabetes mellitus", "IDDM", "juvenile diabetes"]
+  },
+  "diabetes": {
+    "preferred": "diabetes mellitus",
+    "alternatives": ["DM"]
+  },
+  "sugar disease": {
+    "preferred": "diabetes mellitus",
+    "alternatives": ["DM"]
+  },
+  "high cholesterol": {
+    "preferred": "hypercholesterolemia",
+    "alternatives": ["hyperlipidemia", "dyslipidemia", "elevated cholesterol"]
+  },
+  "stroke": {
+    "preferred": "cerebrovascular accident",
+    "alternatives": ["CVA", "cerebral infarction", "brain attack"]
+  },
+  "lung cancer": {
+    "preferred": "lung neoplasm",
+    "alternatives": ["pulmonary neoplasm", "carcinoma of lung", "bronchogenic carcinoma"]
+  },
+  "breast cancer": {
+    "preferred": "breast neoplasm",
+    "alternatives": ["mammary carcinoma", "carcinoma of breast"]
+  },
+  "colon cancer": {
+    "preferred": "colorectal neoplasm",
+    "alternatives": ["colorectal cancer", "colon carcinoma", "CRC"]
+  },
+  "skin cancer": {
+    "preferred": "skin neoplasm",
+    "alternatives": ["cutaneous neoplasm", "melanoma", "basal cell carcinoma", "squamous cell carcinoma"]
+  },
+  "prostate cancer": {
+    "preferred": "prostatic neoplasm",
+    "alternatives": ["prostate carcinoma", "carcinoma of prostate"]
+  },
+  "blood cancer": {
+    "preferred": "hematologic neoplasm",
+    "alternatives": ["leukemia", "lymphoma", "myeloma"]
+  },
+  "asthma": {
+    "preferred": "asthma",
+    "alternatives": ["bronchial asthma", "reactive airway disease"]
+  },
+  "copd": {
+    "preferred": "pulmonary disease, chronic obstructive",
+    "alternatives": ["COPD", "chronic obstructive pulmonary disease", "chronic bronchitis", "emphysema"]
+  },
+  "depression": {
+    "preferred": "depressive disorder",
+    "alternatives": ["major depressive disorder", "MDD", "clinical depression", "unipolar depression"]
+  },
+  "anxiety": {
+    "preferred": "anxiety disorder",
+    "alternatives": ["generalized anxiety disorder", "GAD", "anxiety neurosis"]
+  },
+  "bipolar": {
+    "preferred": "bipolar disorder",
+    "alternatives": ["manic depression", "bipolar affective disorder"]
+  },
+  "schizophrenia": {
+    "preferred": "schizophrenia",
+    "alternatives": ["schizophrenic disorder"]
+  },
+  "alzheimers": {
+    "preferred": "alzheimer disease",
+    "alternatives": ["alzheimer's disease", "AD", "senile dementia of alzheimer type"]
+  },
+  "parkinsons": {
+    "preferred": "parkinson disease",
+    "alternatives": ["parkinson's disease", "PD", "paralysis agitans"]
+  },
+  "arthritis": {
+    "preferred": "arthritis",
+    "alternatives": ["joint inflammation"]
+  },
+  "rheumatoid arthritis": {
+    "preferred": "arthritis, rheumatoid",
+    "alternatives": ["RA", "rheumatoid disease"]
+  },
+  "osteoarthritis": {
+    "preferred": "osteoarthritis",
+    "alternatives": ["OA", "degenerative joint disease", "DJD", "wear and tear arthritis"]
+  },
+  "back pain": {
+    "preferred": "back pain",
+    "alternatives": ["dorsalgia", "lumbago", "lower back pain"]
+  },
+  "migraine": {
+    "preferred": "migraine disorders",
+    "alternatives": ["migraine headache", "migraine with aura", "migraine without aura"]
+  },
+  "headache": {
+    "preferred": "headache",
+    "alternatives": ["cephalalgia", "tension headache"]
+  },
+  "obesity": {
+    "preferred": "obesity",
+    "alternatives": ["morbid obesity", "overweight", "adiposity"]
+  },
+  "kidney disease": {
+    "preferred": "renal insufficiency, chronic",
+    "alternatives": ["chronic kidney disease", "CKD", "chronic renal failure", "nephropathy"]
+  },
+  "liver disease": {
+    "preferred": "liver diseases",
+    "alternatives": ["hepatic disease", "hepatopathy"]
+  },
+  "hepatitis": {
+    "preferred": "hepatitis",
+    "alternatives": ["liver inflammation"]
+  },
+  "hiv": {
+    "preferred": "HIV infections",
+    "alternatives": ["human immunodeficiency virus", "AIDS", "acquired immunodeficiency syndrome"]
+  },
+  "covid": {
+    "preferred": "COVID-19",
+    "alternatives": ["SARS-CoV-2", "coronavirus disease 2019", "coronavirus"]
+  },
+  "epilepsy": {
+    "preferred": "epilepsy",
+    "alternatives": ["seizure disorder", "convulsive disorder"]
+  },
+  "seizures": {
+    "preferred": "seizures",
+    "alternatives": ["convulsions", "epileptic seizures"]
+  },
+  "multiple sclerosis": {
+    "preferred": "multiple sclerosis",
+    "alternatives": ["MS", "disseminated sclerosis"]
+  },
+  "crohns": {
+    "preferred": "crohn disease",
+    "alternatives": ["crohn's disease", "regional enteritis", "granulomatous colitis"]
+  },
+  "ibs": {
+    "preferred": "irritable bowel syndrome",
+    "alternatives": ["IBS", "spastic colon", "irritable colon"]
+  },
+  "ulcerative colitis": {
+    "preferred": "colitis, ulcerative",
+    "alternatives": ["UC", "ulcerative proctitis"]
+  },
+  "eczema": {
+    "preferred": "dermatitis, atopic",
+    "alternatives": ["atopic dermatitis", "atopic eczema"]
+  },
+  "psoriasis": {
+    "preferred": "psoriasis",
+    "alternatives": ["plaque psoriasis", "psoriatic disease"]
+  },
+  "sleep apnea": {
+    "preferred": "sleep apnea syndromes",
+    "alternatives": ["obstructive sleep apnea", "OSA", "sleep disordered breathing"]
+  },
+  "insomnia": {
+    "preferred": "sleep initiation and maintenance disorders",
+    "alternatives": ["insomnia", "sleeplessness", "chronic insomnia"]
+  },
+  "anemia": {
+    "preferred": "anemia",
+    "alternatives": ["low hemoglobin", "low red blood cells", "iron deficiency anemia"]
+  },
+  "blood clot": {
+    "preferred": "thrombosis",
+    "alternatives": ["deep vein thrombosis", "DVT", "pulmonary embolism", "thromboembolic disease"]
+  },
+  "irregular heartbeat": {
+    "preferred": "arrhythmia",
+    "alternatives": ["cardiac arrhythmia", "atrial fibrillation", "afib", "heart rhythm disorder"]
+  },
+  "heart failure": {
+    "preferred": "heart failure",
+    "alternatives": ["congestive heart failure", "CHF", "cardiac failure"]
+  },
+  "thyroid problems": {
+    "preferred": "thyroid diseases",
+    "alternatives": ["hypothyroidism", "hyperthyroidism", "thyroid disorder"]
+  },
+  "gout": {
+    "preferred": "gout",
+    "alternatives": ["gouty arthritis", "hyperuricemia"]
+  },
+  "fibromyalgia": {
+    "preferred": "fibromyalgia",
+    "alternatives": ["fibromyalgia syndrome", "FMS"]
+  },
+  "lupus": {
+    "preferred": "lupus erythematosus, systemic",
+    "alternatives": ["SLE", "systemic lupus erythematosus", "lupus"]
+  },
+  "ptsd": {
+    "preferred": "stress disorders, post-traumatic",
+    "alternatives": ["PTSD", "post-traumatic stress disorder", "posttraumatic stress"]
+  },
+  "adhd": {
+    "preferred": "attention deficit disorder with hyperactivity",
+    "alternatives": ["ADHD", "attention deficit hyperactivity disorder", "ADD"]
+  },
+  "autism": {
+    "preferred": "autism spectrum disorder",
+    "alternatives": ["ASD", "autistic disorder", "autism"]
+  }
+}

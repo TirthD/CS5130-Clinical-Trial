@@ -6,4 +6,5 @@ venv/
 .idea/
 *.egg-info/
 dist/
-build/
+build/venv/
+venv/
