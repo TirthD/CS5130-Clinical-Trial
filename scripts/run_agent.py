@@ -18,6 +18,9 @@ sys.path.insert(0, PROJECT_ROOT)
 from config import GEMINI_API_KEY, GEMINI_MODEL
 from src.api.client import ClinicalTrialsClient
 from src.tools.trial_searcher import TrialSearcher
+from src.tools.medical_term_mapper import MedicalTermMapper
+from src.tools.eligibility_parser import EligibilityParser, UserProfile
+from src.tools.plain_language import PlainLanguageTranslator, ContentType
 from src.agent.tool_registry import ToolRegistry
 from src.agent.agent import ClinicalTrialAgent
 
@@ -57,27 +60,32 @@ def build_agent() -> ClinicalTrialAgent:
     # 1. API client
     api_client = ClinicalTrialsClient()
 
-    # 2. Tools — register what's available
-    #    Member 2's tools (stubs until delivered):
-    def stub_term_mapper(term: str) -> str:
-        """Passthrough until Member 2 delivers medical_term_mapper."""
-        return term
-
-    def stub_eligibility_parser(**kwargs) -> dict:
-        """Stub until Member 2 delivers eligibility_parser."""
-        return {"message": "Eligibility parser not yet implemented", "results": []}
-
-    def stub_plain_language(text: str, context: str = "general") -> str:
-        """Stub until Member 2 delivers plain_language translator."""
-        return text
+    # 2. Member 2's tools — real implementations
+    term_mapper = MedicalTermMapper()
+    eligibility_parser = EligibilityParser(api_key=GEMINI_API_KEY, model_name=GEMINI_MODEL)
+    plain_language = PlainLanguageTranslator(api_key=GEMINI_API_KEY, model_name=GEMINI_MODEL)
 
     #    Member 3's tool (stub until delivered):
     def stub_geo_matcher(**kwargs) -> dict:
         """Stub until Member 3 delivers geo_matcher."""
         return {"message": "Geo matcher not yet implemented", "results": []}
 
-    # 3. Trial searcher (yours — fully functional)
-    searcher = TrialSearcher(api_client=api_client, term_mapper=stub_term_mapper)
+    # 3. Trial searcher with real term mapper
+    searcher = TrialSearcher(
+        api_client=api_client,
+        term_mapper=lambda term: term_mapper.map_term(term).preferred_term,
+    )
+
+    # 4. Tool handler adapters
+    def medical_term_mapper_handler(term: str) -> dict:
+        result = term_mapper.map_term(term)
+        return {
+            "original_term": result.original_term,
+            "preferred_term": result.preferred_term,
+            "confidence": result.confidence,
+            "match_type": result.match_type,
+            "alternatives": result.alternatives,
+        }
 
     def trial_searcher_handler(
         condition: str,
@@ -100,18 +108,56 @@ def build_agent() -> ClinicalTrialAgent:
             "query_used": result.query_used,
             "filters_applied": result.filters_applied,
             "errors": result.errors,
-            "trials": [
-                _trial_to_dict(t) for t in result.trials
-            ],
+            "trials": [_trial_to_dict(t) for t in result.trials],
         }
 
-    # 4. Register all tools
+    def eligibility_parser_handler(
+        trial_nct_ids: list[str],
+        user_age: int = None,
+        user_gender: str = None,
+        user_conditions: list[str] = None,
+    ) -> dict:
+        profile = UserProfile(
+            age=user_age,
+            gender=user_gender,
+            conditions=user_conditions or [],
+        )
+        results = []
+        for nct_id in trial_nct_ids:
+            try:
+                # Fetch trial eligibility text from cached search results
+                trial_data = searcher.client.get_study(nct_id)
+                elig_text = ""
+                if trial_data.eligibility and trial_data.eligibility.criteria_text:
+                    elig_text = trial_data.eligibility.criteria_text
+                result = eligibility_parser.check_eligibility(elig_text, profile)
+                results.append({
+                    "nct_id": nct_id,
+                    "eligible": result.eligible,
+                    "summary": result.summary,
+                    "met_criteria": result.met_criteria,
+                    "unmet_criteria": result.unmet_criteria,
+                })
+            except Exception as e:
+                results.append({
+                    "nct_id": nct_id,
+                    "eligible": "uncertain",
+                    "summary": f"Could not check eligibility: {e}",
+                })
+        return {"results": results}
+
+    def plain_language_handler(text: str, context: str = "general") -> str:
+        content_type = ContentType(context) if context in ContentType._value2member_map_ else ContentType.GENERAL
+        result = plain_language.translate(text, content_type=content_type)
+        return result.translated_text
+
+    # 5. Register all tools
     registry = ToolRegistry()
-    registry.register("medical_term_mapper", stub_term_mapper)
+    registry.register("medical_term_mapper", medical_term_mapper_handler)
     registry.register("trial_searcher", trial_searcher_handler)
     registry.register("geo_matcher", stub_geo_matcher)
-    registry.register("eligibility_parser", stub_eligibility_parser)
-    registry.register("plain_language_translator", stub_plain_language)
+    registry.register("eligibility_parser", eligibility_parser_handler)
+    registry.register("plain_language_translator", plain_language_handler)
 
     # 5. Build and return the agent
     agent = ClinicalTrialAgent(registry=registry)
