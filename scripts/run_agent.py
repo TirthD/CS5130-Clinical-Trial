@@ -15,7 +15,7 @@ import logging
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
-from config import GEMINI_API_KEY, GEMINI_MODEL
+from config import GROQ_API_KEY, GROQ_MODEL
 from src.api.client import ClinicalTrialsClient
 from src.tools.trial_searcher import TrialSearcher
 from src.tools.medical_term_mapper import MedicalTermMapper
@@ -46,12 +46,12 @@ def setup_logging(verbose: bool = False):
 
 def validate_environment():
     """Check that required config is present."""
-    if not GEMINI_API_KEY:
-        print("ERROR: GEMINI_API_KEY not found.")
+    if not GROQ_API_KEY:
+        print("ERROR: GROQ_API_KEY not found.")
         print("Create a .env file in the project root with:")
-        print("  GEMINI_API_KEY=your_key_here")
+        print("  GROQ_API_KEY=your_key_here")
         sys.exit(1)
-    print(f"Model: {GEMINI_MODEL}")
+    print(f"Model: {GROQ_MODEL}")
 
 
 def build_agent() -> ClinicalTrialAgent:
@@ -62,8 +62,8 @@ def build_agent() -> ClinicalTrialAgent:
 
     # 2. Member 2's tools — real implementations
     term_mapper = MedicalTermMapper()
-    eligibility_parser = EligibilityParser(api_key=GEMINI_API_KEY, model_name=GEMINI_MODEL)
-    plain_language = PlainLanguageTranslator(api_key=GEMINI_API_KEY, model_name=GEMINI_MODEL)
+    eligibility_parser = EligibilityParser()
+    plain_language = PlainLanguageTranslator()
 
     #    Member 3's tool (stub until delivered):
     def stub_geo_matcher(**kwargs) -> dict:
@@ -91,10 +91,13 @@ def build_agent() -> ClinicalTrialAgent:
         condition: str,
         location: str = None,
         status: str = "RECRUITING",
-        max_results: int = 20,
+        max_results: int = 5,
     ) -> dict:
-        """Adapter: converts Gemini's args into SearchParams and runs search."""
+        """Adapter: converts Groq's args into SearchParams and runs search."""
         from src.tools.trial_searcher import SearchParams
+
+        # Cap results to keep token usage within Groq free tier limits
+        max_results = min(max_results, 3)
 
         params = SearchParams(
             condition=condition,
@@ -169,21 +172,22 @@ def build_agent() -> ClinicalTrialAgent:
 
 
 def _trial_to_dict(trial) -> dict:
-    """Convert a Trial object to a clean dict for Gemini."""
+    """Convert a Trial object to a clean, token-efficient dict for Groq."""
+    summary = getattr(trial, "brief_summary", None)
+    if summary and len(summary) > 300:
+        summary = summary[:300] + "... [truncated]"
+
     result = {
         "nct_id": getattr(trial, "nct_id", None),
         "brief_title": getattr(trial, "brief_title", None),
-        "official_title": getattr(trial, "official_title", None),
         "overall_status": getattr(trial, "overall_status", None),
         "phase": getattr(trial, "phase", None),
         "conditions": getattr(trial, "conditions", None),
-        "brief_summary": getattr(trial, "brief_summary", None),
+        "brief_summary": summary,
         "sponsor": getattr(trial, "sponsor", None),
-        "start_date": getattr(trial, "start_date", None),
-        "completion_date": getattr(trial, "completion_date", None),
     }
 
-    # Locations
+    # Locations — limit to 3 nearest/most relevant
     locations = getattr(trial, "locations", None)
     if locations:
         result["locations"] = [
@@ -193,17 +197,23 @@ def _trial_to_dict(trial) -> dict:
                 "state": getattr(loc, "state", None),
                 "country": getattr(loc, "country", None),
             }
-            for loc in locations
+            for loc in locations[:3]
         ]
+        if len(locations) > 3:
+            result["total_locations"] = len(locations)
 
     # Eligibility
     elig = getattr(trial, "eligibility", None)
     if elig:
+        criteria = getattr(elig, "criteria_text", None)
+        # Truncate criteria text to keep token count manageable
+        if criteria and len(criteria) > 500:
+            criteria = criteria[:500] + "... [truncated]"
         result["eligibility"] = {
             "minimum_age": getattr(elig, "minimum_age", None),
             "maximum_age": getattr(elig, "maximum_age", None),
             "gender": getattr(elig, "gender", None),
-            "criteria_text": getattr(elig, "criteria_text", None),
+            "criteria_text": criteria,
         }
 
     # Contacts

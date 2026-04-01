@@ -1,7 +1,7 @@
 class ClinicalTrialsAPIError(Exception):
     """Base exception for all API errors."""
 
-    def __init__(self, message: str, status_code: int = None):
+    def __init__(self, message: str, status_code: int = None): # type: ignore
         self.status_code = status_code
         super().__init__(message)
 
