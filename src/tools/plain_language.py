@@ -381,7 +381,7 @@ class PlainLanguageTranslator:
         try:
             prompt = DEFINITIONS_PROMPT.format(text=text)
             response = self._call_gemini_with_retry(prompt)
-            response_text = self._clean_json_response(response.text.strip())
+            response_text = self._clean_json_response(response.text.strip()) # type: ignore
             definitions = json.loads(response_text)
             if isinstance(definitions, list):
                 return definitions
@@ -444,7 +444,7 @@ class PlainLanguageTranslator:
         prompt = prompt_template.format(text=text)
 
         response = self._call_gemini_with_retry(prompt)
-        plain_text = response.text.strip()
+        plain_text = response.text.strip() # type: ignore
 
         return TranslationResult(
             original_text=text,
@@ -474,7 +474,7 @@ class PlainLanguageTranslator:
         )
 
         response = self._call_gemini_with_retry(prompt)
-        response_text = self._clean_json_response(response.text.strip())
+        response_text = self._clean_json_response(response.text.strip()) # type: ignore
         parsed = json.loads(response_text)
 
         return TrialSummary(
