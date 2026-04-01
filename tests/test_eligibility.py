@@ -8,7 +8,8 @@ Part 2: Tests Gemini-based parsing (requires GEMINI_API_KEY in .env)
 import sys
 import os
 
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+# If this file is in tests/, go up one level to the project root
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, PROJECT_ROOT)
 
 from src.tools.eligibility_parser import (
@@ -221,13 +222,13 @@ def test_eligibility_checking():
 
 
 # ===================================================================
-# PART 2: Gemini integration tests (REQUIRES API key)
+# PART 2: Groq/Llama integration tests (REQUIRES API key)
 # ===================================================================
 
-def test_gemini_parsing():
-    """Test full Gemini-based parsing. Requires GEMINI_API_KEY in .env."""
+def test_llm_parsing():
+    """Test full Groq/Llama-based parsing. Requires GROQ_API_KEY in .env."""
     print("\n" + "~"*60)
-    print("  PART 2: Gemini Integration Tests")
+    print("  PART 2: Groq / Llama 3.3 Integration Tests")
     print("~"*60)
 
     # Debug: show where .env should be
@@ -238,24 +239,24 @@ def test_gemini_parsing():
     print(f"  .env exists: {os.path.isfile(dotenv_path)}")
 
     # Check if the key loaded
-    key_from_env = os.getenv("GEMINI_API_KEY", "")
+    key_from_env = os.getenv("GROQ_API_KEY", "")
     key_status = f"{key_from_env[:8]}..." if len(key_from_env) > 8 else "(empty)"
-    print(f"  GEMINI_API_KEY: {key_status}")
+    print(f"  GROQ_API_KEY: {key_status}")
 
     try:
         parser = EligibilityParser()
     except Exception as e:
-        print(f"\n  ⚠ Skipping Gemini tests — could not initialize: {e}")
+        print(f"\n  ⚠ Skipping LLM tests — could not initialize: {e}")
         return
 
-    if not parser._api_key or parser._model is None:
-        print("\n  ⚠ Skipping Gemini tests — no API key or SDK not installed")
+    if not parser._api_key or parser._client is None:
+        print("\n  ⚠ Skipping LLM tests — no API key or SDK not installed")
         print("    To run these tests:")
-        print("    1. pip install google-generativeai")
-        print("    2. Add GEMINI_API_KEY=your_key to .env file")
+        print("    1. pip install groq")
+        print("    2. Add GROQ_API_KEY=your_key to .env file")
         return
 
-    # --- Gemini Test 1: Standard eligibility text ---
+    # --- LLM Test 1: Standard eligibility text ---
     text = """
     Inclusion Criteria:
     - Adults aged 18-65
@@ -271,9 +272,9 @@ def test_gemini_parsing():
     - Currently taking insulin or GLP-1 receptor agonists
     """
 
-    print("\n  Calling Gemini to parse eligibility text...")
+    print("\n  Calling Llama 3.3 to parse eligibility text...")
     criteria = parser.parse_eligibility(text)
-    print_criteria("Gemini — standard diabetes trial", criteria)
+    print_criteria("Llama 3.3 — standard diabetes trial", criteria)
 
     assert criteria.min_age == 18, f"Expected 18, got {criteria.min_age}"
     assert criteria.max_age == 65, f"Expected 65, got {criteria.max_age}"
@@ -282,7 +283,7 @@ def test_gemini_parsing():
     assert len(criteria.exclusion_criteria) > 0
     print("  ✓ Passed")
 
-    # --- Gemini Test 2: Check eligibility for the parsed criteria ---
+    # --- LLM Test 2: Check eligibility for the parsed criteria ---
     user = UserProfile(
         age=45,
         gender="male",
@@ -290,11 +291,11 @@ def test_gemini_parsing():
         medications=["metformin"]
     )
     result = parser.check_eligibility(criteria, user)
-    print_result("Gemini parsed + eligible user check", result)
+    print_result("Llama 3.3 parsed + eligible user check", result)
     assert result.is_eligible == True
     print("  ✓ Passed")
 
-    # --- Gemini Test 3: Messy, unstructured text ---
+    # --- LLM Test 3: Messy, unstructured text ---
     messy_text = """
     Patients must be between 21 and 55 years of age, have a documented
     history of chronic migraine (15 or more headache days per month for
@@ -303,9 +304,9 @@ def test_gemini_parsing():
     the past 4 months are not eligible. Must not have medication overuse
     headache or a history of stroke.
     """
-    print("\n  Calling Gemini to parse messy unstructured text...")
+    print("\n  Calling Llama 3.3 to parse messy unstructured text...")
     criteria2 = parser.parse_eligibility(messy_text)
-    print_criteria("Gemini — messy migraine trial text", criteria2)
+    print_criteria("Llama 3.3 — messy migraine trial text", criteria2)
 
     assert criteria2.min_age == 21
     assert criteria2.max_age == 55
@@ -326,7 +327,7 @@ def main():
     test_eligibility_checking()
 
     # Part 2: Only runs if API key is available
-    test_gemini_parsing()
+    test_llm_parsing()
 
     print(f"\n{'='*60}")
     print(f"  ALL AVAILABLE TESTS PASSED!")

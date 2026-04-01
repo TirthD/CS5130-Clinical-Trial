@@ -23,10 +23,10 @@ VALID_STATUSES = [
 ]
 
 # ---- Google Gemini Configuration ----
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-pro")
-GEMINI_MAX_TOKENS = int(os.getenv("GEMINI_MAX_TOKENS", "2048"))
-GEMINI_TEMPERATURE = float(os.getenv("GEMINI_TEMPERATURE", "0.1"))
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+GROQ_MAX_TOKENS = int(os.getenv("GROQ_MAX_TOKENS", "2048"))
+GROQ_TEMPERATURE = float(os.getenv("GROQ_TEMPERATURE", "0.1"))
 
 # ---- Geographic Defaults ----
 DEFAULT_SEARCH_RADIUS_MILES = 50
