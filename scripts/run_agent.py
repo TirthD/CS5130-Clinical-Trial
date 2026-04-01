@@ -99,6 +99,10 @@ def build_agent() -> ClinicalTrialAgent:
         # Cap results to keep token usage within Groq free tier limits
         max_results = min(max_results, 3)
 
+        # Handle "ANY" status — pass None to skip status filter
+        if status and status.upper() == "ANY":
+            status = "RECRUITING"
+
         params = SearchParams(
             condition=condition,
             location=location,
