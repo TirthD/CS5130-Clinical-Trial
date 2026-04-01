@@ -15,9 +15,12 @@ import logging
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
-from config import GEMINI_API_KEY, GEMINI_MODEL
+from config import GROQ_API_KEY, GROQ_MODEL
 from src.api.client import ClinicalTrialsClient
 from src.tools.trial_searcher import TrialSearcher
+from src.tools.medical_term_mapper import MedicalTermMapper
+from src.tools.eligibility_parser import EligibilityParser, UserProfile
+from src.tools.plain_language import PlainLanguageTranslator, ContentType
 from src.agent.tool_registry import ToolRegistry
 from src.agent.agent import ClinicalTrialAgent
 
@@ -43,12 +46,12 @@ def setup_logging(verbose: bool = False):
 
 def validate_environment():
     """Check that required config is present."""
-    if not GEMINI_API_KEY:
-        print("ERROR: GEMINI_API_KEY not found.")
+    if not GROQ_API_KEY:
+        print("ERROR: GROQ_API_KEY not found.")
         print("Create a .env file in the project root with:")
-        print("  GEMINI_API_KEY=your_key_here")
+        print("  GROQ_API_KEY=your_key_here")
         sys.exit(1)
-    print(f"Model: {GEMINI_MODEL}")
+    print(f"Model: {GROQ_MODEL}")
 
 
 def build_agent() -> ClinicalTrialAgent:
@@ -57,36 +60,44 @@ def build_agent() -> ClinicalTrialAgent:
     # 1. API client
     api_client = ClinicalTrialsClient()
 
-    # 2. Tools — register what's available
-    #    Member 2's tools (stubs until delivered):
-    def stub_term_mapper(term: str) -> str:
-        """Passthrough until Member 2 delivers medical_term_mapper."""
-        return term
-
-    def stub_eligibility_parser(**kwargs) -> dict:
-        """Stub until Member 2 delivers eligibility_parser."""
-        return {"message": "Eligibility parser not yet implemented", "results": []}
-
-    def stub_plain_language(text: str, context: str = "general") -> str:
-        """Stub until Member 2 delivers plain_language translator."""
-        return text
+    # 2. Member 2's tools — real implementations
+    term_mapper = MedicalTermMapper()
+    eligibility_parser = EligibilityParser()
+    plain_language = PlainLanguageTranslator()
 
     #    Member 3's tool (stub until delivered):
     def stub_geo_matcher(**kwargs) -> dict:
         """Stub until Member 3 delivers geo_matcher."""
         return {"message": "Geo matcher not yet implemented", "results": []}
 
-    # 3. Trial searcher (yours — fully functional)
-    searcher = TrialSearcher(api_client=api_client, term_mapper=stub_term_mapper)
+    # 3. Trial searcher with real term mapper
+    searcher = TrialSearcher(
+        api_client=api_client,
+        term_mapper=lambda term: term_mapper.map_term(term).preferred_term,
+    )
+
+    # 4. Tool handler adapters
+    def medical_term_mapper_handler(term: str) -> dict:
+        result = term_mapper.map_term(term)
+        return {
+            "original_term": result.original_term,
+            "preferred_term": result.preferred_term,
+            "confidence": result.confidence,
+            "match_type": result.match_type,
+            "alternatives": result.alternatives,
+        }
 
     def trial_searcher_handler(
         condition: str,
         location: str = None,
         status: str = "RECRUITING",
-        max_results: int = 20,
+        max_results: int = 5,
     ) -> dict:
-        """Adapter: converts Gemini's args into SearchParams and runs search."""
+        """Adapter: converts Groq's args into SearchParams and runs search."""
         from src.tools.trial_searcher import SearchParams
+
+        # Cap results to keep token usage within Groq free tier limits
+        max_results = min(max_results, 3)
 
         params = SearchParams(
             condition=condition,
@@ -100,18 +111,56 @@ def build_agent() -> ClinicalTrialAgent:
             "query_used": result.query_used,
             "filters_applied": result.filters_applied,
             "errors": result.errors,
-            "trials": [
-                _trial_to_dict(t) for t in result.trials
-            ],
+            "trials": [_trial_to_dict(t) for t in result.trials],
         }
 
-    # 4. Register all tools
+    def eligibility_parser_handler(
+        trial_nct_ids: list[str],
+        user_age: int = None,
+        user_gender: str = None,
+        user_conditions: list[str] = None,
+    ) -> dict:
+        profile = UserProfile(
+            age=user_age,
+            gender=user_gender,
+            conditions=user_conditions or [],
+        )
+        results = []
+        for nct_id in trial_nct_ids:
+            try:
+                # Fetch trial eligibility text from cached search results
+                trial_data = searcher.client.get_study(nct_id)
+                elig_text = ""
+                if trial_data.eligibility and trial_data.eligibility.criteria_text:
+                    elig_text = trial_data.eligibility.criteria_text
+                result = eligibility_parser.check_eligibility(elig_text, profile)
+                results.append({
+                    "nct_id": nct_id,
+                    "eligible": result.eligible,
+                    "summary": result.summary,
+                    "met_criteria": result.met_criteria,
+                    "unmet_criteria": result.unmet_criteria,
+                })
+            except Exception as e:
+                results.append({
+                    "nct_id": nct_id,
+                    "eligible": "uncertain",
+                    "summary": f"Could not check eligibility: {e}",
+                })
+        return {"results": results}
+
+    def plain_language_handler(text: str, context: str = "general") -> str:
+        content_type = ContentType(context) if context in ContentType._value2member_map_ else ContentType.GENERAL
+        result = plain_language.translate(text, content_type=content_type)
+        return result.translated_text
+
+    # 5. Register all tools
     registry = ToolRegistry()
-    registry.register("medical_term_mapper", stub_term_mapper)
+    registry.register("medical_term_mapper", medical_term_mapper_handler)
     registry.register("trial_searcher", trial_searcher_handler)
     registry.register("geo_matcher", stub_geo_matcher)
-    registry.register("eligibility_parser", stub_eligibility_parser)
-    registry.register("plain_language_translator", stub_plain_language)
+    registry.register("eligibility_parser", eligibility_parser_handler)
+    registry.register("plain_language_translator", plain_language_handler)
 
     # 5. Build and return the agent
     agent = ClinicalTrialAgent(registry=registry)
@@ -123,21 +172,22 @@ def build_agent() -> ClinicalTrialAgent:
 
 
 def _trial_to_dict(trial) -> dict:
-    """Convert a Trial object to a clean dict for Gemini."""
+    """Convert a Trial object to a clean, token-efficient dict for Groq."""
+    summary = getattr(trial, "brief_summary", None)
+    if summary and len(summary) > 300:
+        summary = summary[:300] + "... [truncated]"
+
     result = {
         "nct_id": getattr(trial, "nct_id", None),
         "brief_title": getattr(trial, "brief_title", None),
-        "official_title": getattr(trial, "official_title", None),
         "overall_status": getattr(trial, "overall_status", None),
         "phase": getattr(trial, "phase", None),
         "conditions": getattr(trial, "conditions", None),
-        "brief_summary": getattr(trial, "brief_summary", None),
+        "brief_summary": summary,
         "sponsor": getattr(trial, "sponsor", None),
-        "start_date": getattr(trial, "start_date", None),
-        "completion_date": getattr(trial, "completion_date", None),
     }
 
-    # Locations
+    # Locations — limit to 3 nearest/most relevant
     locations = getattr(trial, "locations", None)
     if locations:
         result["locations"] = [
@@ -147,17 +197,23 @@ def _trial_to_dict(trial) -> dict:
                 "state": getattr(loc, "state", None),
                 "country": getattr(loc, "country", None),
             }
-            for loc in locations
+            for loc in locations[:3]
         ]
+        if len(locations) > 3:
+            result["total_locations"] = len(locations)
 
     # Eligibility
     elig = getattr(trial, "eligibility", None)
     if elig:
+        criteria = getattr(elig, "criteria_text", None)
+        # Truncate criteria text to keep token count manageable
+        if criteria and len(criteria) > 500:
+            criteria = criteria[:500] + "... [truncated]"
         result["eligibility"] = {
             "minimum_age": getattr(elig, "minimum_age", None),
             "maximum_age": getattr(elig, "maximum_age", None),
             "gender": getattr(elig, "gender", None),
-            "criteria_text": getattr(elig, "criteria_text", None),
+            "criteria_text": criteria,
         }
 
     # Contacts
