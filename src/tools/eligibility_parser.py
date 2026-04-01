@@ -2,10 +2,10 @@
 Eligibility Parser Tool
 =======================
 Extracts structured eligibility criteria from unstructured clinical trial
-text using Google Gemini, then checks if a user profile qualifies.
+text using Groq (Llama 3.3 70B), then checks if a user profile qualifies.
 
 Pipeline:
-    1. Raw eligibility text → Gemini → Structured JSON criteria
+    1. Raw eligibility text → Llama 3.3 → Structured JSON criteria
     2. Structured criteria + User profile → Eligibility check result
 
 The LLM handles the messy NLP work (parsing varied text formats), while
@@ -23,6 +23,8 @@ Usage:
     print(result.reasons)       # ["Age 45 is within range 18-65", ...]
 """
 
+from __future__ import annotations
+
 import json
 import os
 import re
@@ -30,8 +32,8 @@ import logging
 from dataclasses import dataclass, field
 from enum import Enum
 
-# Lazy import — google.generativeai is only needed when calling Gemini
-genai = None
+# Lazy import — groq SDK is only needed when calling the LLM
+groq_client = None
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +83,7 @@ class UserProfile:
 
 
 # ---------------------------------------------------------------------------
-# Gemini prompt for structured extraction
+# LLM prompt for structured extraction
 # ---------------------------------------------------------------------------
 
 EXTRACTION_PROMPT = """You are a clinical trial eligibility parser. Extract structured eligibility criteria from the following clinical trial eligibility text.
@@ -130,11 +132,11 @@ class EligibilityParser:
 
     def __init__(self, api_key: str | None = None, model_name: str | None = None):
         """
-        Initialize the parser with Gemini credentials.
+        Initialize the parser with Groq credentials.
 
         Args:
-            api_key: Google Gemini API key. Falls back to config.py / env var.
-            model_name: Gemini model to use. Defaults to config setting.
+            api_key: Groq API key. Falls back to config.py / env var.
+            model_name: Model to use. Defaults to llama-3.3-70b-versatile.
         """
         # Explicitly load .env from project root (2 levels up from this file)
         # so it works regardless of which directory the script is run from
@@ -152,42 +154,35 @@ class EligibilityParser:
         # Now import config (env vars are loaded, so config picks them up)
         try:
             import config
-            self._api_key = api_key or config.GEMINI_API_KEY
-            self._model_name = model_name or config.GEMINI_MODEL
-            self._max_tokens = getattr(config, "GEMINI_MAX_TOKENS", 2048)
-            self._temperature = getattr(config, "GEMINI_TEMPERATURE", 0.1)
+            self._api_key = api_key or config.GROQ_API_KEY
+            self._model_name = model_name or config.GROQ_MODEL
+            self._max_tokens = getattr(config, "GROQ_MAX_TOKENS", 2048)
+            self._temperature = getattr(config, "GROQ_TEMPERATURE", 0.1)
         except ImportError:
-            self._api_key = api_key or os.getenv("GEMINI_API_KEY", "")
-            self._model_name = model_name or os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+            self._api_key = api_key or os.getenv("GROQ_API_KEY", "")
+            self._model_name = model_name or os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
             self._max_tokens = 2048
             self._temperature = 0.1
 
         if not self._api_key:
             logger.warning(
-                "No Gemini API key provided. Set GEMINI_API_KEY in .env "
+                "No Groq API key provided. Set GROQ_API_KEY in .env "
                 "or pass api_key to EligibilityParser(). "
                 "Regex fallback will be used for parsing."
             )
-            self._model = None
+            self._client = None
             return
 
-        # Import and configure Gemini only when we have a key
+        # Import and configure Groq client only when we have a key
         try:
-            import google.generativeai as _genai
-            _genai.configure(api_key=self._api_key)
-            self._model = _genai.GenerativeModel(
-                self._model_name,
-                generation_config={
-                    "temperature": self._temperature,
-                    "max_output_tokens": self._max_tokens,
-                },
-            )
+            from groq import Groq
+            self._client = Groq(api_key=self._api_key)
         except ImportError:
             logger.warning(
-                "google-generativeai package not installed. "
-                "Install with: pip install google-generativeai"
+                "groq package not installed. "
+                "Install with: pip install groq"
             )
-            self._model = None
+            self._client = None
 
     # ------------------------------------------------------------------
     # Main parsing method
@@ -211,11 +206,11 @@ class EligibilityParser:
 
         # Try LLM-based extraction first
         try:
-            criteria = self._parse_with_gemini(raw_text)
-            logger.info(f"Gemini parse successful (confidence: {criteria.parse_confidence:.2f})")
+            criteria = self._parse_with_llm(raw_text)
+            logger.info(f"LLM parse successful (confidence: {criteria.parse_confidence:.2f})")
             return criteria
         except Exception as e:
-            logger.warning(f"Gemini parsing failed: {e}. Falling back to regex.")
+            logger.warning(f"LLM parsing failed: {e}. Falling back to regex.")
 
         # Fallback: regex-based extraction for basic fields
         try:
@@ -286,15 +281,20 @@ class EligibilityParser:
     # LLM-based parsing
     # ------------------------------------------------------------------
 
-    def _parse_with_gemini(self, raw_text: str) -> EligibilityCriteria:
-        """Send eligibility text to Gemini and parse the structured response."""
-        if self._model is None:
-            raise RuntimeError("Gemini model not available (missing API key or SDK)")
+    def _parse_with_llm(self, raw_text: str) -> EligibilityCriteria:
+        """Send eligibility text to Groq/Llama and parse the structured response."""
+        if self._client is None:
+            raise RuntimeError("Groq client not available (missing API key or SDK)")
 
         prompt = EXTRACTION_PROMPT.format(eligibility_text=raw_text)
 
-        response = self._model.generate_content(prompt)
-        response_text = response.text.strip()
+        response = self._client.chat.completions.create(
+            model=self._model_name,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=self._temperature,
+            max_tokens=self._max_tokens,
+        )
+        response_text = response.choices[0].message.content.strip()
 
         # Clean potential markdown fencing
         response_text = self._clean_json_response(response_text)
@@ -323,7 +323,7 @@ class EligibilityParser:
     def _parse_with_regex(self, raw_text: str) -> EligibilityCriteria:
         """
         Basic regex-based extraction for age and gender.
-        Used as fallback when Gemini is unavailable.
+        Used as fallback when the LLM is unavailable.
         """
         min_age, max_age = self._extract_age_range(raw_text)
         gender = self._extract_gender(raw_text)
@@ -578,7 +578,7 @@ class EligibilityParser:
 
     @staticmethod
     def _clean_json_response(text: str) -> str:
-        """Remove markdown code fences if Gemini wraps the JSON."""
+        """Remove markdown code fences if the LLM wraps the JSON."""
         text = text.strip()
         if text.startswith("```json"):
             text = text[7:]

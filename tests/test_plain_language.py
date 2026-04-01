@@ -2,7 +2,7 @@
 Test script for Plain Language Translator
 ==========================================
 Part 1: Fallback translation + caching (no API key needed)
-Part 2: Gemini-powered translation (requires GEMINI_API_KEY in .env)
+Part 2: Groq/Llama 3.3 powered translation (requires GROQ_API_KEY in .env)
 """
 
 from __future__ import annotations
@@ -10,7 +10,8 @@ from __future__ import annotations
 import sys
 import os
 
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+# If this file is in tests/, go up one level to the project root
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, PROJECT_ROOT)
 
 from src.tools.plain_language import (
@@ -84,7 +85,7 @@ def test_fallback_translation():
     """Test the basic substitution-based fallback translator."""
     # Create translator without API key to force fallback mode
     translator = PlainLanguageTranslator.__new__(PlainLanguageTranslator)
-    translator._model = None
+    translator._client = None
     translator._api_key = ""
     translator._model_name = "none"
     translator._cache = {}
@@ -106,15 +107,15 @@ def test_fallback_translation():
     result = translator.translate(SAMPLE_ELIGIBILITY, ContentType.ELIGIBILITY)
     print_translation("Fallback — eligibility text", result)
     assert result.success == True
-    assert "blood sugar test" in result.plain_text.lower()  # HbA1c definition
-    assert "kidney function test" in result.plain_text.lower()  # eGFR definition
+    assert "blood sugar test" in result.plain_text.lower()
+    assert "kidney function test" in result.plain_text.lower()
     print("  ✓ Passed")
 
     # --- Test 3: Procedure fallback ---
     result = translator.translate(SAMPLE_PROCEDURE, ContentType.PROCEDURE)
     print_translation("Fallback — procedure text", result)
     assert result.success == True
-    assert "under the skin" in result.plain_text.lower()  # subcutaneous
+    assert "under the skin" in result.plain_text.lower()
     print("  ✓ Passed")
 
     # --- Test 4: Empty input ---
@@ -125,14 +126,13 @@ def test_fallback_translation():
     assert result.plain_text == ""
     print("  ✓ Passed")
 
-    # --- Test 5: Already plain text (no medical terms) ---
+    # --- Test 5: Already plain text ---
     plain_input = "This study looks at a new treatment for back pain in older adults."
     result = translator.translate(plain_input, ContentType.GENERAL)
     print(f"\n  TEST: Already plain text")
     print(f"  Input:  {plain_input}")
     print(f"  Output: {result.plain_text}")
     assert result.success == True
-    # Should be mostly unchanged since there are no complex terms
     assert "back pain" in result.plain_text
     print("  ✓ Passed")
 
@@ -140,7 +140,7 @@ def test_fallback_translation():
 def test_caching():
     """Test the in-memory translation cache."""
     translator = PlainLanguageTranslator.__new__(PlainLanguageTranslator)
-    translator._model = None
+    translator._client = None
     translator._api_key = ""
     translator._model_name = "none"
     translator._cache = {}
@@ -156,7 +156,7 @@ def test_caching():
     print(f"  After first translation: cache_size = {translator.cache_size}")
 
     result2 = translator.translate(SAMPLE_DESCRIPTION, ContentType.TRIAL_DESCRIPTION)
-    assert translator.cache_size == 1  # no new entry
+    assert translator.cache_size == 1
     assert result1.plain_text == result2.plain_text
     print(f"  After same translation:  cache_size = {translator.cache_size} (cache hit)")
     print("  ✓ Passed")
@@ -171,7 +171,7 @@ def test_caching():
     result4 = translator.translate(
         SAMPLE_DESCRIPTION, ContentType.TRIAL_DESCRIPTION, use_cache=False
     )
-    assert translator.cache_size == 2  # didn't add to cache
+    assert translator.cache_size == 2
     print(f"  Cache bypass:            cache_size = {translator.cache_size}")
     print("  ✓ Passed")
 
@@ -186,7 +186,7 @@ def test_caching():
 def test_batch_translation():
     """Test batch translation."""
     translator = PlainLanguageTranslator.__new__(PlainLanguageTranslator)
-    translator._model = None
+    translator._client = None
     translator._api_key = ""
     translator._model_name = "none"
     translator._cache = {}
@@ -208,13 +208,13 @@ def test_batch_translation():
 
 
 # ===================================================================
-# PART 2: Gemini integration tests (REQUIRES API key)
+# PART 2: Groq/Llama integration tests (REQUIRES API key)
 # ===================================================================
 
-def test_gemini_translation():
-    """Test Gemini-powered translation. Requires GEMINI_API_KEY in .env."""
+def test_groq_translation():
+    """Test Groq/Llama-powered translation. Requires GROQ_API_KEY in .env."""
     print("\n" + "~" * 60)
-    print("  PART 2: Gemini Integration Tests")
+    print("  PART 2: Groq / Llama 3.3 Integration Tests")
     print("~" * 60)
 
     # Debug info
@@ -225,29 +225,30 @@ def test_gemini_translation():
     try:
         translator = PlainLanguageTranslator()
     except Exception as e:
-        print(f"\n  ⚠ Skipping Gemini tests — could not initialize: {e}")
+        print(f"\n  ⚠ Skipping LLM tests — could not initialize: {e}")
         return
 
-    if not translator._api_key or translator._model is None:
-        print("\n  ⚠ Skipping Gemini tests — no API key or SDK not installed")
+    if not translator._api_key or translator._client is None:
+        print("\n  ⚠ Skipping LLM tests — no API key or SDK not installed")
+        print("    To run these tests:")
+        print("    1. pip install groq")
+        print("    2. Add GROQ_API_KEY=your_key to .env file")
         return
 
     key_preview = translator._api_key[:8] + "..."
     print(f"  API key: {key_preview}")
-    print(f"  Model: {translator._model_name}")
-    print(f"\n  Note: Free tier allows 5 requests/min.")
-    print(f"  The translator will auto-retry on rate limits (waits ~60s).\n")
+    print(f"  Model: {translator._model_name}\n")
 
-    # --- Gemini Test 1: Trial description ---
-    print("  Calling Gemini to translate trial description...")
+    # --- LLM Test 1: Trial description ---
+    print("  Calling Llama 3.3 to translate trial description...")
     result_desc = translator.translate(SAMPLE_DESCRIPTION, ContentType.TRIAL_DESCRIPTION)
-    print_translation("Gemini — trial description", result_desc)
+    print_translation("Llama 3.3 — trial description", result_desc)
     assert result_desc.success == True
-    assert result_desc.source == "gemini"
+    assert result_desc.source == "groq"
     assert len(result_desc.plain_text) > 20
     print("  ✓ Passed")
 
-    # --- Gemini Test 2: Caching (no API call — uses cached result from Test 1) ---
+    # --- LLM Test 2: Caching (no API call) ---
     cache_before = translator.cache_size
     result_cached = translator.translate(SAMPLE_DESCRIPTION, ContentType.TRIAL_DESCRIPTION)
     assert translator.cache_size == cache_before
@@ -255,24 +256,24 @@ def test_gemini_translation():
     print(f"\n  Cache test: size stayed at {translator.cache_size} (cache hit)")
     print("  ✓ Passed")
 
-    # --- Gemini Test 3: Eligibility criteria ---
-    print("\n  Calling Gemini to translate eligibility...")
+    # --- LLM Test 3: Eligibility criteria ---
+    print("\n  Calling Llama 3.3 to translate eligibility...")
     result_elig = translator.translate(SAMPLE_ELIGIBILITY, ContentType.ELIGIBILITY)
-    print_translation("Gemini — eligibility", result_elig)
+    print_translation("Llama 3.3 — eligibility", result_elig)
     assert result_elig.success == True
-    assert result_elig.source == "gemini"
+    assert result_elig.source == "groq"
     assert "you" in result_elig.plain_text.lower()
     print("  ✓ Passed")
 
-    # --- Gemini Test 4: Procedures ---
-    print("\n  Calling Gemini to translate procedures...")
+    # --- LLM Test 4: Procedures ---
+    print("\n  Calling Llama 3.3 to translate procedures...")
     result_proc = translator.translate(SAMPLE_PROCEDURE, ContentType.PROCEDURE)
-    print_translation("Gemini — procedures", result_proc)
+    print_translation("Llama 3.3 — procedures", result_proc)
     assert result_proc.success == True
     print("  ✓ Passed")
 
-    # --- Gemini Test 5: Full trial summary (1 API call) ---
-    print("\n  Calling Gemini to generate full trial summary...")
+    # --- LLM Test 5: Full trial summary ---
+    print("\n  Calling Llama 3.3 to generate full trial summary...")
     summary = translator.translate_trial_summary(
         title="A Phase 3, Randomized, Double-Blind Study of Drug X vs Placebo in Moderate-to-Severe Atopic Dermatitis",
         description=SAMPLE_DESCRIPTION,
@@ -282,15 +283,15 @@ def test_gemini_translation():
         contact="Dr. Jane Smith, 617-555-0100",
         nct_id="NCT12345678",
     )
-    print_summary("Gemini — full trial summary", summary)
+    print_summary("Llama 3.3 — full trial summary", summary)
     assert summary.nct_id == "NCT12345678"
     assert summary.location == "Massachusetts General Hospital, Boston, MA"
     assert len(summary.purpose) > 10
     assert len(summary.disclaimer) > 10
     print("  ✓ Passed")
 
-    # --- Gemini Test 6: Definition extraction (1 API call) ---
-    print("\n  Calling Gemini to extract definitions...")
+    # --- LLM Test 6: Definition extraction ---
+    print("\n  Calling Llama 3.3 to extract definitions...")
     definitions = translator.extract_definitions(SAMPLE_ELIGIBILITY)
     print(f"\n  Extracted {len(definitions)} definitions:")
     for d in definitions[:5]:
@@ -299,7 +300,6 @@ def test_gemini_translation():
         print("  ✓ Passed")
     else:
         print("  ⚠ Definitions returned empty (may be rate limited) — non-critical, skipping")
-    # Not a hard assert — definitions are a nice-to-have feature
 
 
 # ===================================================================
@@ -317,7 +317,7 @@ def main():
     test_batch_translation()
 
     # Part 2: Only with API key
-    test_gemini_translation()
+    test_groq_translation()
 
     print(f"\n{'='*60}")
     print(f"  ALL AVAILABLE TESTS PASSED!")

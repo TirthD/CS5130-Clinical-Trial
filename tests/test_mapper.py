@@ -4,7 +4,9 @@ import sys
 import os
 
 # Add project root to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
+# If this file is in tests/, go up one level to the project root
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, PROJECT_ROOT)
 
 from src.tools.medical_term_mapper import MedicalTermMapper
 
@@ -22,7 +24,7 @@ def print_result(label, result):
 def main():
     # Initialize mapper with our synonyms file
     mapper = MedicalTermMapper(
-        synonyms_path=os.path.join(os.path.dirname(__file__), "data", "medical_synonyms.json")
+        synonyms_path=os.path.join(PROJECT_ROOT, "data", "medical_synonyms.json")
     )
     print(f"Loaded mapper: {mapper}")
     print(f"Known terms: {len(mapper.get_all_known_terms())}")

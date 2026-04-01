@@ -2,7 +2,7 @@
 Plain Language Translator Tool
 ===============================
 Translates complex medical/clinical trial text into simple, easy-to-understand
-English using Google Gemini.
+English using Groq (Llama 3.3 70B).
 
 Used at the end of the pipeline to make trial descriptions, eligibility
 criteria, and procedures accessible to non-medical users.
@@ -54,7 +54,7 @@ class TranslationResult:
     content_type: ContentType     # What kind of content was translated
     definitions: list[str] = field(default_factory=list)  # Key terms defined
     success: bool = True          # Whether translation succeeded
-    source: str = "gemini"        # "gemini" or "fallback"
+    source: str = "groq"          # "groq" or "fallback"
 
 
 @dataclass
@@ -189,16 +189,16 @@ Text:
 class PlainLanguageTranslator:
     """
     Translates medical and clinical trial text into plain English
-    using Google Gemini.
+    using Groq (Llama 3.3 70B).
     """
 
     def __init__(self, api_key: str | None = None, model_name: str | None = None):
         """
-        Initialize the translator with Gemini credentials.
+        Initialize the translator with Groq credentials.
 
         Args:
-            api_key: Google Gemini API key. Falls back to config.py / env var.
-            model_name: Gemini model to use. Defaults to config setting.
+            api_key: Groq API key. Falls back to config.py / env var.
+            model_name: Model to use. Defaults to llama-3.3-70b-versatile.
         """
         # Load .env from project root
         try:
@@ -214,34 +214,33 @@ class PlainLanguageTranslator:
         # Load config
         try:
             import config
-            self._api_key = api_key or config.GEMINI_API_KEY
-            self._model_name = model_name or config.GEMINI_MODEL
+            self._api_key = api_key or config.GROQ_API_KEY
+            self._model_name = model_name or config.GROQ_MODEL
         except ImportError:
-            self._api_key = api_key or os.getenv("GEMINI_API_KEY", "")
-            self._model_name = model_name or os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+            self._api_key = api_key or os.getenv("GROQ_API_KEY", "")
+            self._model_name = model_name or os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 
         # Simple in-memory cache: hash(input) -> TranslationResult
         self._cache: dict[str, TranslationResult] = {}
 
         if not self._api_key:
             logger.warning(
-                "No Gemini API key provided. "
+                "No Groq API key provided. "
                 "PlainLanguageTranslator will use basic fallback."
             )
-            self._model = None
+            self._client = None
             return
 
-        # Initialize Gemini
+        # Initialize Groq client
         try:
-            import google.generativeai as _genai
-            _genai.configure(api_key=self._api_key)
-            self._model = _genai.GenerativeModel(self._model_name)
+            from groq import Groq
+            self._client = Groq(api_key=self._api_key)
         except ImportError:
             logger.warning(
-                "google-generativeai not installed. "
-                "Install with: pip install google-generativeai"
+                "groq package not installed. "
+                "Install with: pip install groq"
             )
-            self._model = None
+            self._client = None
 
     # ------------------------------------------------------------------
     # Main translation methods
@@ -280,14 +279,14 @@ class PlainLanguageTranslator:
                 logger.debug(f"Cache hit for {content_type.value} translation")
                 return self._cache[cache_key]
 
-        # Try Gemini
+        # Try LLM
         try:
-            result = self._translate_with_gemini(text, content_type)
+            result = self._translate_with_llm(text, content_type)
             if use_cache:
                 self._cache[cache_key] = result
             return result
         except Exception as e:
-            logger.warning(f"Gemini translation failed: {e}. Using fallback.")
+            logger.warning(f"LLM translation failed: {e}. Using fallback.")
 
         # Fallback
         result = self._translate_fallback(text, content_type)
@@ -346,9 +345,9 @@ class PlainLanguageTranslator:
                 "Always consult a healthcare provider before enrolling in a trial."
             )
 
-        # Try Gemini-powered full summary
+        # Try LLM-powered full summary
         try:
-            summary = self._summarize_with_gemini(
+            summary = self._summarize_with_llm(
                 title, description, eligibility, interventions
             )
             summary.location = location
@@ -357,7 +356,7 @@ class PlainLanguageTranslator:
             summary.disclaimer = MEDICAL_DISCLAIMER
             return summary
         except Exception as e:
-            logger.warning(f"Gemini summary failed: {e}. Building from parts.")
+            logger.warning(f"LLM summary failed: {e}. Building from parts.")
 
         # Fallback: translate each piece individually
         return self._build_summary_from_parts(
@@ -375,13 +374,13 @@ class PlainLanguageTranslator:
         Returns:
             List of "term: definition" strings.
         """
-        if not self._model or not text.strip():
+        if not self._client or not text.strip():
             return []
 
         try:
             prompt = DEFINITIONS_PROMPT.format(text=text)
-            response = self._call_gemini_with_retry(prompt)
-            response_text = self._clean_json_response(response.text.strip()) # type: ignore
+            response_text = self._call_llm_with_retry(prompt)
+            response_text = self._clean_json_response(response_text)
             definitions = json.loads(response_text)
             if isinstance(definitions, list):
                 return definitions
@@ -391,34 +390,37 @@ class PlainLanguageTranslator:
         return []
 
     # ------------------------------------------------------------------
-    # Gemini translation
+    # LLM translation (Groq / Llama 3.3)
     # ------------------------------------------------------------------
 
-    def _call_gemini_with_retry(self, prompt: str, max_retries: int = 3):
+    def _call_llm_with_retry(self, prompt: str, max_retries: int = 3) -> str:
         """
-        Call Gemini with automatic retry on rate limit (429) errors.
-
-        Waits and retries when hitting the free tier quota limit,
-        so tests and real usage don't fail on transient rate limits.
+        Call Groq with automatic retry on rate limit (429) errors.
 
         Args:
-            prompt: The prompt to send to Gemini.
+            prompt: The prompt to send to the LLM.
             max_retries: Maximum number of retry attempts.
 
         Returns:
-            Gemini response object.
+            The LLM response text as a string.
         """
-        if self._model is None:
-            raise RuntimeError("Gemini model not available")
+        if self._client is None:
+            raise RuntimeError("Groq client not available")
 
         for attempt in range(max_retries + 1):
             try:
-                return self._model.generate_content(prompt)
+                response = self._client.chat.completions.create(
+                    model=self._model_name,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.1,
+                    max_tokens=2048,
+                )
+                return response.choices[0].message.content.strip()
             except Exception as e:
                 error_str = str(e)
-                if "429" in error_str or "quota" in error_str.lower():
+                if "429" in error_str or "rate" in error_str.lower():
                     if attempt < max_retries:
-                        wait_time = 60  # free tier resets per minute
+                        wait_time = 30
                         logger.info(
                             f"Rate limited. Waiting {wait_time}s before retry "
                             f"({attempt + 1}/{max_retries})..."
@@ -433,18 +435,17 @@ class PlainLanguageTranslator:
                 else:
                     raise
 
-    def _translate_with_gemini(
+    def _translate_with_llm(
         self, text: str, content_type: ContentType
     ) -> TranslationResult:
-        """Send text to Gemini with the appropriate prompt template."""
-        if self._model is None:
-            raise RuntimeError("Gemini model not available")
+        """Send text to Groq/Llama with the appropriate prompt template."""
+        if self._client is None:
+            raise RuntimeError("Groq client not available")
 
         prompt_template = PROMPTS.get(content_type, PROMPTS[ContentType.GENERAL])
         prompt = prompt_template.format(text=text)
 
-        response = self._call_gemini_with_retry(prompt)
-        plain_text = response.text.strip() # type: ignore
+        plain_text = self._call_llm_with_retry(prompt)
 
         return TranslationResult(
             original_text=text,
@@ -452,19 +453,19 @@ class PlainLanguageTranslator:
             content_type=content_type,
             definitions=[],  # call extract_definitions() separately if needed
             success=True,
-            source="gemini"
+            source="groq"
         )
 
-    def _summarize_with_gemini(
+    def _summarize_with_llm(
         self,
         title: str,
         description: str,
         eligibility: str,
         interventions: str,
     ) -> TrialSummary:
-        """Generate a complete plain-language trial summary with Gemini."""
-        if self._model is None:
-            raise RuntimeError("Gemini model not available")
+        """Generate a complete plain-language trial summary with Groq/Llama."""
+        if self._client is None:
+            raise RuntimeError("Groq client not available")
 
         prompt = TRIAL_SUMMARY_PROMPT.format(
             title=title or "Not provided",
@@ -473,8 +474,8 @@ class PlainLanguageTranslator:
             interventions=interventions or "Not provided",
         )
 
-        response = self._call_gemini_with_retry(prompt)
-        response_text = self._clean_json_response(response.text.strip()) # type: ignore
+        response_text = self._call_llm_with_retry(prompt)
+        response_text = self._clean_json_response(response_text)
         parsed = json.loads(response_text)
 
         return TrialSummary(
@@ -492,7 +493,7 @@ class PlainLanguageTranslator:
         self, text: str, content_type: ContentType
     ) -> TranslationResult:
         """
-        Basic fallback when Gemini is unavailable.
+        Basic fallback when the LLM is unavailable.
         Applies simple substitutions for common medical terms.
         """
         SUBSTITUTIONS = {
@@ -525,10 +526,9 @@ class PlainLanguageTranslator:
             "bmi": "BMI (body mass index)",
         }
 
+        import re
         result_text = text
         for medical_term, plain_term in SUBSTITUTIONS.items():
-            # Case-insensitive replacement, preserving surrounding text
-            import re
             pattern = re.compile(re.escape(medical_term), re.IGNORECASE)
             result_text = pattern.sub(plain_term, result_text)
 
@@ -586,7 +586,7 @@ class PlainLanguageTranslator:
 
     @staticmethod
     def _clean_json_response(text: str) -> str:
-        """Remove markdown code fences if present."""
+        """Remove markdown code fences if the LLM wraps the JSON."""
         text = text.strip()
         if text.startswith("```json"):
             text = text[7:]
