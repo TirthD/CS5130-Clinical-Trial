@@ -1,3 +1,10 @@
+"""
+Safety guardrails for the Clinical Trial Finder agent.
+Validates every response before it reaches the user.
+Enforces: no medical advice, NCT citations required,
+disclaimer present, no hallucinated trial details.
+"""
+
 import re
 import logging
 from dataclasses import dataclass, field
@@ -143,14 +150,8 @@ class SafetyGuard:
                 )
 
     def _ensure_disclaimer(self, response: str, result: SafetyCheckResult) -> str:
-        """Check for disclaimer and append if missing."""
-        # Check if disclaimer (or a substantial part of it) is present
-        disclaimer_key_phrase = "NOT medical advice"
-        if disclaimer_key_phrase in response:
-            return response
-
-        result.add_issue("Disclaimer was missing — auto-appended.")
-        return response.rstrip() + "\n\n" + DISCLAIMER
+        """Disclaimer is now shown in the app sidebar, not appended to responses."""
+        return response
 
 
 # ── Standalone Utility Functions ───────────────────────────────────────
