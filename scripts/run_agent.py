@@ -21,6 +21,7 @@ from src.tools.trial_searcher import TrialSearcher
 from src.tools.medical_term_mapper import MedicalTermMapper
 from src.tools.eligibility_parser import EligibilityParser, UserProfile
 from src.tools.plain_language import PlainLanguageTranslator, ContentType
+from src.tools.geo_matcher import GeoMatcher
 from src.agent.tool_registry import ToolRegistry
 from src.agent.agent import ClinicalTrialAgent
 
@@ -65,12 +66,13 @@ def build_agent() -> ClinicalTrialAgent:
     eligibility_parser = EligibilityParser()
     plain_language = PlainLanguageTranslator()
 
-    #    Member 3's tool (stub until delivered):
-    def stub_geo_matcher(**kwargs) -> dict:
-        """Stub until Member 3 delivers geo_matcher."""
-        return {"message": "Geo matcher not yet implemented", "results": []}
+    # 3. Member 3's tool — real implementation
+    geo_matcher = GeoMatcher()
 
-    # 3. Trial searcher with real term mapper
+    # Cache to store Trial objects between tool calls
+    _cached_trials: list = []
+
+    # 4. Trial searcher with real term mapper
     searcher = TrialSearcher(
         api_client=api_client,
         term_mapper=lambda term: term_mapper.map_term(term).preferred_term,
@@ -110,12 +112,53 @@ def build_agent() -> ClinicalTrialAgent:
             max_results=max_results,
         )
         result = searcher.search(params)
+        # Cache trials for geo_matcher to use
+        _cached_trials.clear()
+        _cached_trials.extend(result.trials)
         return {
             "total_found": result.total_found,
             "query_used": result.query_used,
             "filters_applied": result.filters_applied,
             "errors": result.errors,
             "trials": [_trial_to_dict(t) for t in result.trials],
+        }
+
+    def geo_matcher_handler(
+        trial_nct_ids: list[str],
+        user_location: str,
+        max_distance_miles: float = 50.0,
+    ) -> dict:
+        """Filter cached trials by proximity to user location."""
+        # Filter cached trials to only those requested
+        trials_to_match = [
+            t for t in _cached_trials
+            if t.nct_id in trial_nct_ids
+        ]
+        if not trials_to_match:
+            # If no cached trials match, use all cached trials
+            trials_to_match = _cached_trials
+
+        summary = geo_matcher.match(
+            trials=trials_to_match,
+            user_location=user_location,
+            radius_miles=max_distance_miles,
+        )
+        return {
+            "user_location": summary.user_location,
+            "radius_miles": summary.radius_miles,
+            "total_input": summary.total_trials_input,
+            "within_radius": summary.trials_within_radius,
+            "errors": summary.errors,
+            "results": [
+                {
+                    "nct_id": r.trial.nct_id,
+                    "distance_miles": round(r.distance_miles, 1),
+                    "facility": r.facility_name,
+                    "city": r.city,
+                    "state": r.state,
+                }
+                for r in summary.results
+            ],
         }
 
     def eligibility_parser_handler(
@@ -162,7 +205,7 @@ def build_agent() -> ClinicalTrialAgent:
     registry = ToolRegistry()
     registry.register("medical_term_mapper", medical_term_mapper_handler)
     registry.register("trial_searcher", trial_searcher_handler)
-    registry.register("geo_matcher", stub_geo_matcher)
+    registry.register("geo_matcher", geo_matcher_handler)
     registry.register("eligibility_parser", eligibility_parser_handler)
     registry.register("plain_language_translator", plain_language_handler)
 

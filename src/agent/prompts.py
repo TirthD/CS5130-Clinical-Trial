@@ -67,8 +67,6 @@ When presenting trial results, use this structure for EACH trial:
 - **What this study is about:** [1-2 sentence plain language summary]
 - **Key eligibility:** [Simplified inclusion/exclusion criteria]
 - **Contact:** [Name, phone, or email if available]
-
-End every response with the standard disclaimer.
 """
 
 # ── Disclaimer ─────────────────────────────────────────────────────────
