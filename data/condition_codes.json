@@ -1,0 +1,327 @@
+{
+  "diabetes mellitus": {
+    "mesh_id": "D003920",
+    "mesh_term": "Diabetes Mellitus",
+    "tree_numbers": ["C18.452.394.750", "C19.246"]
+  },
+  "diabetes mellitus type 2": {
+    "mesh_id": "D003924",
+    "mesh_term": "Diabetes Mellitus, Type 2",
+    "tree_numbers": ["C18.452.394.750.149", "C19.246.300"]
+  },
+  "diabetes mellitus type 1": {
+    "mesh_id": "D003922",
+    "mesh_term": "Diabetes Mellitus, Type 1",
+    "tree_numbers": ["C18.452.394.750.124", "C19.246.267"]
+  },
+  "hypertension": {
+    "mesh_id": "D006973",
+    "mesh_term": "Hypertension",
+    "tree_numbers": ["C14.907.489"]
+  },
+  "myocardial infarction": {
+    "mesh_id": "D009203",
+    "mesh_term": "Myocardial Infarction",
+    "tree_numbers": ["C14.280.647.500", "C14.907.585.500"]
+  },
+  "heart failure": {
+    "mesh_id": "D006333",
+    "mesh_term": "Heart Failure",
+    "tree_numbers": ["C14.280.434"]
+  },
+  "arrhythmia": {
+    "mesh_id": "D001145",
+    "mesh_term": "Arrhythmias, Cardiac",
+    "tree_numbers": ["C14.280.067", "C23.550.073"]
+  },
+  "atrial fibrillation": {
+    "mesh_id": "D001281",
+    "mesh_term": "Atrial Fibrillation",
+    "tree_numbers": ["C14.280.067.198"]
+  },
+  "coronary artery disease": {
+    "mesh_id": "D003324",
+    "mesh_term": "Coronary Artery Disease",
+    "tree_numbers": ["C14.280.647.250.285", "C14.907.137.126.339"]
+  },
+  "cerebrovascular accident": {
+    "mesh_id": "D020521",
+    "mesh_term": "Stroke",
+    "tree_numbers": ["C10.228.140.300.775", "C14.907.253.855"]
+  },
+  "thrombosis": {
+    "mesh_id": "D013927",
+    "mesh_term": "Thrombosis",
+    "tree_numbers": ["C14.907.355.830"]
+  },
+  "pulmonary embolism": {
+    "mesh_id": "D011655",
+    "mesh_term": "Pulmonary Embolism",
+    "tree_numbers": ["C08.381.746", "C14.907.355.590"]
+  },
+  "asthma": {
+    "mesh_id": "D001249",
+    "mesh_term": "Asthma",
+    "tree_numbers": ["C08.127.108", "C08.381.495.108", "C20.543.480.680.095"]
+  },
+  "pulmonary disease, chronic obstructive": {
+    "mesh_id": "D029424",
+    "mesh_term": "Pulmonary Disease, Chronic Obstructive",
+    "tree_numbers": ["C08.381.495.389"]
+  },
+  "lung neoplasm": {
+    "mesh_id": "D008175",
+    "mesh_term": "Lung Neoplasms",
+    "tree_numbers": ["C04.588.894.797.520", "C08.381.540", "C08.785.520"]
+  },
+  "breast neoplasm": {
+    "mesh_id": "D001943",
+    "mesh_term": "Breast Neoplasms",
+    "tree_numbers": ["C04.588.180", "C17.800.090.500"]
+  },
+  "colorectal neoplasm": {
+    "mesh_id": "D015179",
+    "mesh_term": "Colorectal Neoplasms",
+    "tree_numbers": ["C04.588.274.476.411.307", "C06.301.371.411.307", "C06.405.249.411.307"]
+  },
+  "prostatic neoplasm": {
+    "mesh_id": "D011471",
+    "mesh_term": "Prostatic Neoplasms",
+    "tree_numbers": ["C04.588.945.440.770", "C12.294.565.625", "C12.758.409.625"]
+  },
+  "skin neoplasm": {
+    "mesh_id": "D012878",
+    "mesh_term": "Skin Neoplasms",
+    "tree_numbers": ["C04.588.805", "C17.800.882"]
+  },
+  "melanoma": {
+    "mesh_id": "D008545",
+    "mesh_term": "Melanoma",
+    "tree_numbers": ["C04.557.465.625.650.510", "C04.557.580.625.650.510"]
+  },
+  "hematologic neoplasm": {
+    "mesh_id": "D019337",
+    "mesh_term": "Hematologic Neoplasms",
+    "tree_numbers": ["C04.588.448", "C15.604"]
+  },
+  "leukemia": {
+    "mesh_id": "D007938",
+    "mesh_term": "Leukemia",
+    "tree_numbers": ["C04.557.337", "C15.604.515"]
+  },
+  "lymphoma": {
+    "mesh_id": "D008223",
+    "mesh_term": "Lymphoma",
+    "tree_numbers": ["C04.557.386", "C15.604.515.569", "C20.683.515.761"]
+  },
+  "pancreatic neoplasm": {
+    "mesh_id": "D010190",
+    "mesh_term": "Pancreatic Neoplasms",
+    "tree_numbers": ["C04.588.322.475", "C06.301.625.475", "C06.689.667"]
+  },
+  "ovarian neoplasm": {
+    "mesh_id": "D010051",
+    "mesh_term": "Ovarian Neoplasms",
+    "tree_numbers": ["C04.588.322.455", "C13.351.500.056.630.705"]
+  },
+  "depressive disorder": {
+    "mesh_id": "D003866",
+    "mesh_term": "Depressive Disorder",
+    "tree_numbers": ["F03.600.300"]
+  },
+  "depressive disorder, major": {
+    "mesh_id": "D003865",
+    "mesh_term": "Depressive Disorder, Major",
+    "tree_numbers": ["F03.600.300.375"]
+  },
+  "anxiety disorder": {
+    "mesh_id": "D001008",
+    "mesh_term": "Anxiety Disorders",
+    "tree_numbers": ["F03.080"]
+  },
+  "bipolar disorder": {
+    "mesh_id": "D001714",
+    "mesh_term": "Bipolar Disorder",
+    "tree_numbers": ["F03.600.100"]
+  },
+  "schizophrenia": {
+    "mesh_id": "D012559",
+    "mesh_term": "Schizophrenia",
+    "tree_numbers": ["F03.700.675"]
+  },
+  "stress disorders, post-traumatic": {
+    "mesh_id": "D013313",
+    "mesh_term": "Stress Disorders, Post-Traumatic",
+    "tree_numbers": ["F03.080.931", "F03.950.750.500"]
+  },
+  "attention deficit disorder with hyperactivity": {
+    "mesh_id": "D001289",
+    "mesh_term": "Attention Deficit Disorder with Hyperactivity",
+    "tree_numbers": ["F03.625.094.150"]
+  },
+  "autism spectrum disorder": {
+    "mesh_id": "D000067877",
+    "mesh_term": "Autism Spectrum Disorder",
+    "tree_numbers": ["F03.625.164.113"]
+  },
+  "alzheimer disease": {
+    "mesh_id": "D000544",
+    "mesh_term": "Alzheimer Disease",
+    "tree_numbers": ["C10.228.140.380.100", "C10.574.945.249", "F03.615.400.100"]
+  },
+  "parkinson disease": {
+    "mesh_id": "D010300",
+    "mesh_term": "Parkinson Disease",
+    "tree_numbers": ["C10.228.140.079.862.500", "C10.574.812"]
+  },
+  "multiple sclerosis": {
+    "mesh_id": "D009103",
+    "mesh_term": "Multiple Sclerosis",
+    "tree_numbers": ["C10.114.375.500", "C10.228.228.399.500", "C20.111.258.500"]
+  },
+  "epilepsy": {
+    "mesh_id": "D004827",
+    "mesh_term": "Epilepsy",
+    "tree_numbers": ["C10.228.140.490"]
+  },
+  "migraine disorders": {
+    "mesh_id": "D008881",
+    "mesh_term": "Migraine Disorders",
+    "tree_numbers": ["C10.228.140.546.399.750"]
+  },
+  "arthritis, rheumatoid": {
+    "mesh_id": "D001172",
+    "mesh_term": "Arthritis, Rheumatoid",
+    "tree_numbers": ["C05.550.114.154", "C17.300.775.099", "C20.111.199"]
+  },
+  "osteoarthritis": {
+    "mesh_id": "D010003",
+    "mesh_term": "Osteoarthritis",
+    "tree_numbers": ["C05.550.114.606", "C05.799.613"]
+  },
+  "lupus erythematosus, systemic": {
+    "mesh_id": "D008180",
+    "mesh_term": "Lupus Erythematosus, Systemic",
+    "tree_numbers": ["C17.300.775.500"]
+  },
+  "fibromyalgia": {
+    "mesh_id": "D005356",
+    "mesh_term": "Fibromyalgia",
+    "tree_numbers": ["C05.651.324", "C10.668.491.325", "C23.888.592.612.324"]
+  },
+  "gout": {
+    "mesh_id": "D006073",
+    "mesh_term": "Gout",
+    "tree_numbers": ["C05.550.354", "C16.320.565.398.500", "C18.452.648.398.500"]
+  },
+  "back pain": {
+    "mesh_id": "D001416",
+    "mesh_term": "Back Pain",
+    "tree_numbers": ["C23.888.592.612.107"]
+  },
+  "obesity": {
+    "mesh_id": "D009765",
+    "mesh_term": "Obesity",
+    "tree_numbers": ["C18.654.726.500", "C23.888.144.699.500", "E01.370.600.115.100.709.500"]
+  },
+  "hypercholesterolemia": {
+    "mesh_id": "D006937",
+    "mesh_term": "Hypercholesterolemia",
+    "tree_numbers": ["C18.452.584.500.500.396"]
+  },
+  "renal insufficiency, chronic": {
+    "mesh_id": "D051436",
+    "mesh_term": "Renal Insufficiency, Chronic",
+    "tree_numbers": ["C12.777.419.780.750", "C13.351.968.419.780.750"]
+  },
+  "liver diseases": {
+    "mesh_id": "D008107",
+    "mesh_term": "Liver Diseases",
+    "tree_numbers": ["C06.552"]
+  },
+  "hepatitis": {
+    "mesh_id": "D006505",
+    "mesh_term": "Hepatitis",
+    "tree_numbers": ["C06.552.380"]
+  },
+  "hepatitis c": {
+    "mesh_id": "D006526",
+    "mesh_term": "Hepatitis C",
+    "tree_numbers": ["C06.552.380.705.437"]
+  },
+  "HIV infections": {
+    "mesh_id": "D015658",
+    "mesh_term": "HIV Infections",
+    "tree_numbers": ["C01.221.250.875", "C01.778.640.400", "C20.673.480"]
+  },
+  "COVID-19": {
+    "mesh_id": "D000086382",
+    "mesh_term": "COVID-19",
+    "tree_numbers": ["C01.748.610.763.500", "C08.730.610.763.500"]
+  },
+  "dermatitis, atopic": {
+    "mesh_id": "D003876",
+    "mesh_term": "Dermatitis, Atopic",
+    "tree_numbers": ["C17.800.174.255", "C20.543.480.343"]
+  },
+  "psoriasis": {
+    "mesh_id": "D011565",
+    "mesh_term": "Psoriasis",
+    "tree_numbers": ["C17.800.859.675"]
+  },
+  "crohn disease": {
+    "mesh_id": "D003424",
+    "mesh_term": "Crohn Disease",
+    "tree_numbers": ["C06.405.205.265", "C06.405.469.432.249"]
+  },
+  "colitis, ulcerative": {
+    "mesh_id": "D003093",
+    "mesh_term": "Colitis, Ulcerative",
+    "tree_numbers": ["C06.405.205.731.500", "C06.405.469.158.272.500"]
+  },
+  "irritable bowel syndrome": {
+    "mesh_id": "D043183",
+    "mesh_term": "Irritable Bowel Syndrome",
+    "tree_numbers": ["C06.405.469.860.480"]
+  },
+  "sleep apnea syndromes": {
+    "mesh_id": "D012891",
+    "mesh_term": "Sleep Apnea Syndromes",
+    "tree_numbers": ["C08.618.846.185.750", "C10.886.425.800.750", "C23.888.592.796.785.750"]
+  },
+  "sleep initiation and maintenance disorders": {
+    "mesh_id": "D007319",
+    "mesh_term": "Sleep Initiation and Maintenance Disorders",
+    "tree_numbers": ["C10.886.425.800.200", "F03.870.400.800.200"]
+  },
+  "anemia": {
+    "mesh_id": "D000740",
+    "mesh_term": "Anemia",
+    "tree_numbers": ["C15.378.071"]
+  },
+  "thyroid diseases": {
+    "mesh_id": "D013959",
+    "mesh_term": "Thyroid Diseases",
+    "tree_numbers": ["C19.874"]
+  },
+  "arthritis": {
+    "mesh_id": "D001168",
+    "mesh_term": "Arthritis",
+    "tree_numbers": ["C05.550.114"]
+  },
+  "headache": {
+    "mesh_id": "D006261",
+    "mesh_term": "Headache",
+    "tree_numbers": ["C10.228.140.546", "C23.888.592.612.441"]
+  },
+  "hypotension": {
+    "mesh_id": "D007022",
+    "mesh_term": "Hypotension",
+    "tree_numbers": ["C14.907.514"]
+  },
+  "seizures": {
+    "mesh_id": "D012640",
+    "mesh_term": "Seizures",
+    "tree_numbers": ["C10.228.140.490.493", "C23.888.592.742"]
+  }
+}
