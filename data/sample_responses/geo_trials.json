@@ -1,0 +1,331 @@
+{
+  "_comment": "Sample ClinicalTrials.gov API response with location-rich trial data. Used by integration tests and the evaluation runner. Format mirrors the real v2 API (protocolSection nested structure).",
+  "studies": [
+    {
+      "protocolSection": {
+        "identificationModule": {
+          "nctId": "NCT_GEO_001",
+          "briefTitle": "Cambridge Cardiovascular Prevention Study",
+          "officialTitle": "A Phase 2 Randomized Controlled Trial of Cardiovascular Risk Reduction in Adults"
+        },
+        "statusModule": {
+          "overallStatus": "RECRUITING",
+          "startDateStruct": {"date": "2024-01-15"},
+          "primaryCompletionDateStruct": {"date": "2026-01-15"}
+        },
+        "designModule": {
+          "phases": ["PHASE2"]
+        },
+        "conditionsModule": {
+          "conditions": ["Cardiovascular Disease", "Hypertension"]
+        },
+        "descriptionModule": {
+          "briefSummary": "This study evaluates a novel intervention for reducing cardiovascular risk in adults aged 40-70."
+        },
+        "sponsorCollaboratorsModule": {
+          "leadSponsor": {"name": "Harvard Medical School"}
+        },
+        "armsInterventionsModule": {
+          "interventions": [
+            {"name": "Lifestyle Intervention", "type": "BEHAVIORAL", "description": "Structured diet and exercise program"}
+          ]
+        },
+        "eligibilityModule": {
+          "eligibilityCriteria": "Inclusion: Adults 40-70 with hypertension. Exclusion: Prior heart attack.",
+          "sex": "ALL",
+          "minimumAge": "40 Years",
+          "maximumAge": "70 Years",
+          "healthyVolunteers": false
+        },
+        "contactsLocationsModule": {
+          "centralContacts": [
+            {"name": "Dr. Jane Smith", "phone": "617-555-0100", "email": "jsmith@example.com"}
+          ],
+          "locations": [
+            {
+              "facility": "Cambridge Health Alliance",
+              "city": "Cambridge",
+              "state": "MA",
+              "country": "United States",
+              "zip": "02139",
+              "status": "RECRUITING"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "protocolSection": {
+        "identificationModule": {
+          "nctId": "NCT_GEO_002",
+          "briefTitle": "Worcester Diabetes Management Trial",
+          "officialTitle": "Intensive Glycemic Control in Type 2 Diabetes Patients"
+        },
+        "statusModule": {
+          "overallStatus": "RECRUITING",
+          "startDateStruct": {"date": "2024-03-01"},
+          "primaryCompletionDateStruct": {"date": "2026-06-01"}
+        },
+        "designModule": {
+          "phases": ["PHASE3"]
+        },
+        "conditionsModule": {
+          "conditions": ["Type 2 Diabetes", "Hyperglycemia"]
+        },
+        "descriptionModule": {
+          "briefSummary": "Evaluates intensive versus standard glycemic control in type 2 diabetes patients."
+        },
+        "sponsorCollaboratorsModule": {
+          "leadSponsor": {"name": "UMass Medical School"}
+        },
+        "armsInterventionsModule": {
+          "interventions": [
+            {"name": "Metformin Extended Release", "type": "DRUG", "description": "1000mg twice daily"}
+          ]
+        },
+        "eligibilityModule": {
+          "eligibilityCriteria": "Inclusion: Type 2 diabetes, HbA1c 7.5-11%. Exclusion: Renal failure.",
+          "sex": "ALL",
+          "minimumAge": "30 Years",
+          "maximumAge": "75 Years",
+          "healthyVolunteers": false
+        },
+        "contactsLocationsModule": {
+          "centralContacts": [
+            {"name": "Dr. Robert Lee", "phone": "508-555-0200", "email": "rlee@example.com"}
+          ],
+          "locations": [
+            {
+              "facility": "UMass Memorial Medical Center",
+              "city": "Worcester",
+              "state": "MA",
+              "country": "United States",
+              "zip": "01605",
+              "status": "RECRUITING"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "protocolSection": {
+        "identificationModule": {
+          "nctId": "NCT_GEO_003",
+          "briefTitle": "Providence Breast Cancer Screening Study",
+          "officialTitle": "Novel Biomarkers for Early Breast Cancer Detection"
+        },
+        "statusModule": {
+          "overallStatus": "RECRUITING",
+          "startDateStruct": {"date": "2024-06-01"},
+          "primaryCompletionDateStruct": {"date": "2027-06-01"}
+        },
+        "designModule": {
+          "phases": ["PHASE2"]
+        },
+        "conditionsModule": {
+          "conditions": ["Breast Cancer", "Breast Neoplasms"]
+        },
+        "descriptionModule": {
+          "briefSummary": "This study evaluates blood biomarkers for early detection of breast cancer in high-risk women."
+        },
+        "sponsorCollaboratorsModule": {
+          "leadSponsor": {"name": "Brown University"}
+        },
+        "armsInterventionsModule": {
+          "interventions": [
+            {"name": "Blood Biomarker Panel", "type": "DIAGNOSTIC_TEST", "description": "Novel liquid biopsy panel"}
+          ]
+        },
+        "eligibilityModule": {
+          "eligibilityCriteria": "Inclusion: Women 35-65 with family history of breast cancer. Exclusion: Prior cancer diagnosis.",
+          "sex": "FEMALE",
+          "minimumAge": "35 Years",
+          "maximumAge": "65 Years",
+          "healthyVolunteers": true
+        },
+        "contactsLocationsModule": {
+          "centralContacts": [
+            {"name": "Dr. Maria Gonzalez", "phone": "401-555-0300", "email": "mgonzalez@example.com"}
+          ],
+          "locations": [
+            {
+              "facility": "Brown University Oncology Center",
+              "city": "Providence",
+              "state": "RI",
+              "country": "United States",
+              "zip": "02912",
+              "status": "RECRUITING"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "protocolSection": {
+        "identificationModule": {
+          "nctId": "NCT_GEO_004",
+          "briefTitle": "New York Alzheimer's Prevention Trial",
+          "officialTitle": "Multi-Modal Intervention for Alzheimer's Disease Prevention in High-Risk Adults"
+        },
+        "statusModule": {
+          "overallStatus": "RECRUITING",
+          "startDateStruct": {"date": "2023-09-01"},
+          "primaryCompletionDateStruct": {"date": "2028-09-01"}
+        },
+        "designModule": {
+          "phases": ["PHASE3"]
+        },
+        "conditionsModule": {
+          "conditions": ["Alzheimer Disease", "Mild Cognitive Impairment"]
+        },
+        "descriptionModule": {
+          "briefSummary": "Tests whether combined cognitive training, exercise, and dietary modification prevents Alzheimer's in genetically at-risk adults."
+        },
+        "sponsorCollaboratorsModule": {
+          "leadSponsor": {"name": "Columbia University"}
+        },
+        "armsInterventionsModule": {
+          "interventions": [
+            {"name": "Multi-Modal Intervention", "type": "BEHAVIORAL", "description": "Cognitive training + diet + exercise"}
+          ]
+        },
+        "eligibilityModule": {
+          "eligibilityCriteria": "Inclusion: Age 60-85, APOE4 carrier. Exclusion: Dementia diagnosis.",
+          "sex": "ALL",
+          "minimumAge": "60 Years",
+          "maximumAge": "85 Years",
+          "healthyVolunteers": false
+        },
+        "contactsLocationsModule": {
+          "centralContacts": [
+            {"name": "Dr. Alan Patel", "phone": "212-555-0400", "email": "apatel@example.com"}
+          ],
+          "locations": [
+            {
+              "facility": "Columbia University Irving Medical Center",
+              "city": "New York",
+              "state": "NY",
+              "country": "United States",
+              "zip": "10032",
+              "status": "RECRUITING"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "protocolSection": {
+        "identificationModule": {
+          "nctId": "NCT_GEO_005",
+          "briefTitle": "Multi-Site COPD Rehabilitation Trial",
+          "officialTitle": "Pulmonary Rehabilitation in Moderate-Severe COPD: A Multi-Center Study"
+        },
+        "statusModule": {
+          "overallStatus": "RECRUITING",
+          "startDateStruct": {"date": "2024-02-01"},
+          "primaryCompletionDateStruct": {"date": "2026-12-01"}
+        },
+        "designModule": {
+          "phases": ["PHASE2", "PHASE3"]
+        },
+        "conditionsModule": {
+          "conditions": ["COPD", "Chronic Obstructive Pulmonary Disease"]
+        },
+        "descriptionModule": {
+          "briefSummary": "A multi-site trial of structured pulmonary rehabilitation versus standard care in moderate-severe COPD."
+        },
+        "sponsorCollaboratorsModule": {
+          "leadSponsor": {"name": "National Heart, Lung, and Blood Institute"}
+        },
+        "armsInterventionsModule": {
+          "interventions": [
+            {"name": "Pulmonary Rehabilitation Program", "type": "BEHAVIORAL", "description": "12-week supervised exercise and education"}
+          ]
+        },
+        "eligibilityModule": {
+          "eligibilityCriteria": "Inclusion: COPD GOLD stage II-III. Exclusion: Active smoking in last 6 months.",
+          "sex": "ALL",
+          "minimumAge": "45 Years",
+          "maximumAge": "80 Years",
+          "healthyVolunteers": false
+        },
+        "contactsLocationsModule": {
+          "centralContacts": [
+            {"name": "Dr. Susan Kim", "phone": "617-555-0500", "email": "skim@example.com"}
+          ],
+          "locations": [
+            {
+              "facility": "Boston Medical Center",
+              "city": "Boston",
+              "state": "MA",
+              "country": "United States",
+              "zip": "02118",
+              "status": "RECRUITING"
+            },
+            {
+              "facility": "Chicago Lung Institute",
+              "city": "Chicago",
+              "state": "IL",
+              "country": "United States",
+              "zip": "60611",
+              "status": "RECRUITING"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "protocolSection": {
+        "identificationModule": {
+          "nctId": "NCT_GEO_006",
+          "briefTitle": "Los Angeles Pediatric Asthma Trial",
+          "officialTitle": "Environmental Interventions to Reduce Asthma Exacerbations in Urban Children"
+        },
+        "statusModule": {
+          "overallStatus": "RECRUITING",
+          "startDateStruct": {"date": "2024-05-01"},
+          "primaryCompletionDateStruct": {"date": "2027-05-01"}
+        },
+        "designModule": {
+          "phases": ["PHASE2"]
+        },
+        "conditionsModule": {
+          "conditions": ["Asthma", "Pediatric Asthma"]
+        },
+        "descriptionModule": {
+          "briefSummary": "Tests whether home environmental modifications reduce asthma exacerbations in urban children aged 5-17."
+        },
+        "sponsorCollaboratorsModule": {
+          "leadSponsor": {"name": "UCLA Health"}
+        },
+        "armsInterventionsModule": {
+          "interventions": [
+            {"name": "Home Environmental Modification", "type": "BEHAVIORAL", "description": "HEPA filters, allergen covers, mold remediation"}
+          ]
+        },
+        "eligibilityModule": {
+          "eligibilityCriteria": "Inclusion: Age 5-17 with doctor-diagnosed asthma, 2+ ER visits in past year. Exclusion: Other pulmonary disease.",
+          "sex": "ALL",
+          "minimumAge": "5 Years",
+          "maximumAge": "17 Years",
+          "healthyVolunteers": false
+        },
+        "contactsLocationsModule": {
+          "centralContacts": [
+            {"name": "Dr. Carlos Rivera", "phone": "310-555-0600", "email": "crivera@example.com"}
+          ],
+          "locations": [
+            {
+              "facility": "UCLA Mattel Children's Hospital",
+              "city": "Los Angeles",
+              "state": "CA",
+              "country": "United States",
+              "zip": "90095",
+              "status": "RECRUITING"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
