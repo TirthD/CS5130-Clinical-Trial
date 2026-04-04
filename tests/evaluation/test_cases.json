@@ -1,0 +1,197 @@
+{
+  "_comment": "Evaluation test cases for GeoMatcher. Each case specifies a user location, a set of trials with known sites, the known coordinates for those sites (used by MockGeocoder), and the expected results.",
+  "test_cases": [
+    {
+      "id": "tc_boston_50mi",
+      "description": "Boston user, 50-mile radius — should include Cambridge and Worcester, exclude Hartford and Chicago",
+      "user_location": "Boston, MA, United States",
+      "radius_miles": 50,
+      "coords_registry": {
+        "boston, ma, united states":      [42.3601, -71.0589],
+        "cambridge, ma, united states":   [42.3736, -71.1097],
+        "worcester, ma, united states":   [42.2626, -71.8023],
+        "providence, ri, united states":  [41.8240, -71.4128],
+        "hartford, ct, united states":    [41.7658, -72.6851],
+        "chicago, il, united states":     [41.8781, -87.6298]
+      },
+      "trials": [
+        {
+          "nct_id": "NCT_TC1_001",
+          "brief_title": "Cambridge Cardiology Study",
+          "locations": [
+            {"city": "Cambridge", "state": "MA", "country": "United States"}
+          ],
+          "expected_distance_miles_approx": 4
+        },
+        {
+          "nct_id": "NCT_TC1_002",
+          "brief_title": "Worcester Diabetes Trial",
+          "locations": [
+            {"city": "Worcester", "state": "MA", "country": "United States"}
+          ],
+          "expected_distance_miles_approx": 40
+        },
+        {
+          "nct_id": "NCT_TC1_003",
+          "brief_title": "Hartford Neurology Study",
+          "locations": [
+            {"city": "Hartford", "state": "CT", "country": "United States"}
+          ],
+          "expected_distance_miles_approx": 100
+        },
+        {
+          "nct_id": "NCT_TC1_004",
+          "brief_title": "Chicago Oncology Trial",
+          "locations": [
+            {"city": "Chicago", "state": "IL", "country": "United States"}
+          ],
+          "expected_distance_miles_approx": 980
+        }
+      ],
+      "expected_within_radius": ["NCT_TC1_001", "NCT_TC1_002"],
+      "expected_order": ["NCT_TC1_001", "NCT_TC1_002"],
+      "expected_excluded": ["NCT_TC1_003", "NCT_TC1_004"]
+    },
+    {
+      "id": "tc_boston_100mi",
+      "description": "Boston user, 100-mile radius — adds Hartford to the result set",
+      "user_location": "Boston, MA, United States",
+      "radius_miles": 100,
+      "coords_registry": {
+        "boston, ma, united states":      [42.3601, -71.0589],
+        "cambridge, ma, united states":   [42.3736, -71.1097],
+        "worcester, ma, united states":   [42.2626, -71.8023],
+        "hartford, ct, united states":    [41.7658, -72.6851],
+        "chicago, il, united states":     [41.8781, -87.6298]
+      },
+      "trials": [
+        {
+          "nct_id": "NCT_TC2_001",
+          "brief_title": "Cambridge Cardiology Study",
+          "locations": [{"city": "Cambridge", "state": "MA", "country": "United States"}],
+          "expected_distance_miles_approx": 4
+        },
+        {
+          "nct_id": "NCT_TC2_002",
+          "brief_title": "Worcester Diabetes Trial",
+          "locations": [{"city": "Worcester", "state": "MA", "country": "United States"}],
+          "expected_distance_miles_approx": 40
+        },
+        {
+          "nct_id": "NCT_TC2_003",
+          "brief_title": "Hartford Neurology Study",
+          "locations": [{"city": "Hartford", "state": "CT", "country": "United States"}],
+          "expected_distance_miles_approx": 100
+        },
+        {
+          "nct_id": "NCT_TC2_004",
+          "brief_title": "Chicago Oncology Trial",
+          "locations": [{"city": "Chicago", "state": "IL", "country": "United States"}],
+          "expected_distance_miles_approx": 980
+        }
+      ],
+      "expected_within_radius": ["NCT_TC2_001", "NCT_TC2_002", "NCT_TC2_003"],
+      "expected_order": ["NCT_TC2_001", "NCT_TC2_002", "NCT_TC2_003"],
+      "expected_excluded": ["NCT_TC2_004"]
+    },
+    {
+      "id": "tc_multi_site_trial",
+      "description": "Trial with two sites; GeoMatcher should use the nearest (Cambridge, not Chicago)",
+      "user_location": "Boston, MA, United States",
+      "radius_miles": 50,
+      "coords_registry": {
+        "boston, ma, united states":      [42.3601, -71.0589],
+        "cambridge, ma, united states":   [42.3736, -71.1097],
+        "chicago, il, united states":     [41.8781, -87.6298]
+      },
+      "trials": [
+        {
+          "nct_id": "NCT_TC3_001",
+          "brief_title": "Multi-Site Heart Study",
+          "locations": [
+            {"city": "Chicago",   "state": "IL", "country": "United States"},
+            {"city": "Cambridge", "state": "MA", "country": "United States"}
+          ],
+          "expected_distance_miles_approx": 4,
+          "expected_nearest_city": "Cambridge"
+        }
+      ],
+      "expected_within_radius": ["NCT_TC3_001"],
+      "expected_order": ["NCT_TC3_001"],
+      "expected_excluded": []
+    },
+    {
+      "id": "tc_no_locations",
+      "description": "Trials with no location data should be skipped entirely",
+      "user_location": "Boston, MA, United States",
+      "radius_miles": 50,
+      "coords_registry": {
+        "boston, ma, united states": [42.3601, -71.0589]
+      },
+      "trials": [
+        {
+          "nct_id": "NCT_TC4_001",
+          "brief_title": "Remote-Only Study",
+          "locations": [],
+          "expected_distance_miles_approx": null
+        }
+      ],
+      "expected_within_radius": [],
+      "expected_order": [],
+      "expected_excluded": ["NCT_TC4_001"]
+    },
+    {
+      "id": "tc_bad_user_location",
+      "description": "When the user's location cannot be geocoded, the summary should report an error",
+      "user_location": "Fictional City, ZZ",
+      "radius_miles": 50,
+      "coords_registry": {},
+      "trials": [
+        {
+          "nct_id": "NCT_TC5_001",
+          "brief_title": "Any Study",
+          "locations": [{"city": "Cambridge", "state": "MA", "country": "United States"}],
+          "expected_distance_miles_approx": null
+        }
+      ],
+      "expected_within_radius": [],
+      "expected_order": [],
+      "expected_excluded": ["NCT_TC5_001"],
+      "expected_errors": 1
+    },
+    {
+      "id": "tc_ny_user",
+      "description": "New York user; Chicago (700 mi away) is excluded but New York itself geocodes to distance 0",
+      "user_location": "New York, NY, United States",
+      "radius_miles": 50,
+      "coords_registry": {
+        "new york, ny, united states":    [40.7128, -74.0060],
+        "chicago, il, united states":     [41.8781, -87.6298],
+        "cambridge, ma, united states":   [42.3736, -71.1097]
+      },
+      "trials": [
+        {
+          "nct_id": "NCT_TC6_001",
+          "brief_title": "NY Cardiology Study",
+          "locations": [{"city": "New York", "state": "NY", "country": "United States"}],
+          "expected_distance_miles_approx": 0
+        },
+        {
+          "nct_id": "NCT_TC6_002",
+          "brief_title": "Cambridge Diabetes Trial",
+          "locations": [{"city": "Cambridge", "state": "MA", "country": "United States"}],
+          "expected_distance_miles_approx": 215
+        },
+        {
+          "nct_id": "NCT_TC6_003",
+          "brief_title": "Chicago Oncology Trial",
+          "locations": [{"city": "Chicago", "state": "IL", "country": "United States"}],
+          "expected_distance_miles_approx": 790
+        }
+      ],
+      "expected_within_radius": ["NCT_TC6_001"],
+      "expected_order": ["NCT_TC6_001"],
+      "expected_excluded": ["NCT_TC6_002", "NCT_TC6_003"]
+    }
+  ]
+}
