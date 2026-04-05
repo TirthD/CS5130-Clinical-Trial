@@ -118,7 +118,7 @@ def build_agent():
         try:
             content_type = ContentType(context) if context in ContentType._value2member_map_ else ContentType.GENERAL
             result = plain_language.translate(text, content_type=content_type)
-            return result.translated_text
+            return result.plain_text
         except Exception:
             return text
 
