@@ -6,9 +6,10 @@ call tools in sequence, and assemble safe, cited responses.
 
 import json
 import logging
+import time
 from typing import Any
 
-from groq import Groq
+from groq import Groq, BadRequestError
 
 from config import GROQ_API_KEY, GROQ_MODEL
 from src.agent.prompts import (
@@ -22,6 +23,10 @@ from src.agent.safety import (
     SafetyGuard,
     is_medical_advice_request,
     get_medical_advice_redirect,
+    is_off_topic,
+    is_greeting,
+    get_off_topic_redirect,
+    get_greeting_response,
 )
 
 logger = logging.getLogger(__name__)
@@ -80,10 +85,18 @@ class ClinicalTrialAgent:
         """
         logger.info(f"Processing query: {user_query[:100]}...")
 
-        # Step 1: Early safety check
+        # Step 1: Early safety checks
+        if is_greeting(user_query):
+            logger.info("Greeting detected — returning welcome message")
+            return get_greeting_response()
+
         if is_medical_advice_request(user_query):
             logger.info("Medical advice request detected — redirecting")
             return get_medical_advice_redirect()
+
+        if is_off_topic(user_query):
+            logger.info("Off-topic query detected — redirecting")
+            return get_off_topic_redirect()
 
         # Reset per-query state
         self._nct_ids_this_query = set()
@@ -94,16 +107,8 @@ class ClinicalTrialAgent:
         messages.append({"role": "user", "content": user_query})
 
         # Step 3: Send to Groq and handle tool loop
-        try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=messages, # type: ignore
-                tools=self.tools, # type: ignore
-                tool_choice="auto",
-                max_tokens=4096,
-            )
-        except Exception as e:
-            logger.error(f"Groq API error: {e}", exc_info=True)
+        response = self._call_groq(messages)
+        if response is None:
             return self._error_response("connecting to the AI model")
 
         final_text = self._handle_tool_loop(messages, response)
@@ -160,22 +165,45 @@ class ClinicalTrialAgent:
                 })
 
             # Send tool results back to Groq
-            try:
-                response = self.client.chat.completions.create(
-                    model=self.model,
-                    messages=messages,# type: ignore
-                    tools=self.tools,# type: ignore
-                    tool_choice="auto",
-                    max_tokens=4096,
-                )
-            except Exception as e:
-                logger.error(f"Groq error after tool results: {e}", exc_info=True)
+            response = self._call_groq(messages)
+            if response is None:
                 return self._error_response("processing tool results")
 
             rounds += 1
 
         logger.warning(f"Hit max tool rounds ({MAX_TOOL_ROUNDS})")
         return response.choices[0].message.content or ""
+
+    def _call_groq(self, messages: list[dict], retries: int = 3):
+        """
+        Call Groq with parallel_tool_calls=False and retry on tool_use_failed.
+
+        Llama occasionally generates malformed tool calls in XML format instead
+        of JSON. Retrying usually resolves it within 1-2 attempts.
+        """
+        for attempt in range(retries):
+            try:
+                return self.client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,  # type: ignore
+                    tools=self.tools,  # type: ignore
+                    tool_choice="auto",
+                    parallel_tool_calls=False,
+                    max_tokens=4096,
+                )
+            except BadRequestError as e:
+                if "tool_use_failed" in str(e) and attempt < retries - 1:
+                    logger.warning(
+                        f"tool_use_failed on attempt {attempt + 1}, retrying..."
+                    )
+                    time.sleep(1)
+                    continue
+                logger.error(f"Groq BadRequestError: {e}", exc_info=True)
+                return None
+            except Exception as e:
+                logger.error(f"Groq API error: {e}", exc_info=True)
+                return None
+        return None
 
     def _execute_tool_call(self, tool_call) -> dict[str, Any]:
         """Execute a single tool call and return the result."""

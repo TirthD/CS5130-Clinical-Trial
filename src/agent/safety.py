@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 Safety guardrails for the Clinical Trial Finder agent.
 Validates every response before it reaches the user.
@@ -179,6 +180,89 @@ def is_medical_advice_request(user_query: str) -> bool:
 def get_medical_advice_redirect() -> str:
     """Return the standard redirect message for medical advice requests."""
     return MEDICAL_ADVICE_REDIRECT
+
+
+# ── Off-topic / gibberish guard ────────────────────────────────────────
+
+# Keywords that suggest the query is about clinical trials / health
+_CLINICAL_SIGNALS = [
+    r"\b(trial|study|studies|clinical|research|enroll|eligib)\b",
+    r"\b(condition|disease|diagnosis|symptom|treatment|therapy|medication|drug)\b",
+    r"\b(cancer|diabetes|heart|alzheimer|asthma|hypertension|depression|anxiety)\b",
+    r"\b(find|search|look|looking|seek|seeking|where|locate|near|nearby)\b",
+    r"\b(hospital|doctor|physician|recruit|participant|volunteer)\b",
+    r"\b(age|gender|male|female|location|city|state|zip)\b",
+    r"\b(phase|placebo|randomized|cohort|arm|intervention|outcome)\b",
+    r"\bNCT\d+",
+]
+
+_GREET_PATTERNS = [
+    r"^\s*(hi|hello|hey|howdy|greetings|good (morning|afternoon|evening))[\s!.,]*$",
+    r"^\s*how are you[\s!.,?]*$",
+    r"^\s*what('s| is) up[\s!.,?]*$",
+]
+
+OFF_TOPIC_REDIRECT = (
+    "I'm a Clinical Trial Finder — I can help you search for clinical trials, "
+    "understand eligibility criteria, and find research studies near you.\n\n"
+    "Try asking something like:\n"
+    '- *"Find diabetes trials in Boston"*\n'
+    '- *"I\'m 45 with hypertension in New York, what trials are available?"*\n'
+    '- *"Show me cancer studies near Chicago"*'
+)
+
+GREETING_RESPONSE = (
+    "Hello! I'm the Clinical Trial Finder. I can help you search for clinical trials "
+    "and understand eligibility criteria.\n\n"
+    "What condition or location are you looking for trials in?"
+)
+
+
+def is_off_topic(user_query: str) -> bool:
+    """
+    Return True if the query has no clinical/health signals and is
+    clearly unrelated to clinical trial searching.
+    """
+    query = user_query.strip()
+    if not query:
+        return True
+
+    # Greetings are handled separately (friendly response, not "off-topic")
+    for pat in _GREET_PATTERNS:
+        if re.match(pat, query, re.IGNORECASE):
+            return False  # handled by is_greeting()
+
+    # If any clinical signal is present, it's on-topic
+    for pat in _CLINICAL_SIGNALS:
+        if re.search(pat, query, re.IGNORECASE):
+            return False
+
+    # Short queries (< 4 words) with no clinical signal → off-topic
+    word_count = len(query.split())
+    if word_count < 8:
+        return True
+
+    return False
+
+
+def is_greeting(user_query: str) -> bool:
+    """Return True if the query is a simple greeting."""
+    query = user_query.strip()
+    for pat in _GREET_PATTERNS:
+        if re.match(pat, query, re.IGNORECASE):
+            return True
+    # "hi i am yajur", "my name is ...", short intro phrases
+    if re.match(r"^\s*(hi|hello|hey).{0,40}$", query, re.IGNORECASE):
+        return True
+    return False
+
+
+def get_off_topic_redirect() -> str:
+    return OFF_TOPIC_REDIRECT
+
+
+def get_greeting_response() -> str:
+    return GREETING_RESPONSE
 
 
 def sanitize_response(response: str, known_nct_ids: set[str] | None = None) -> str:

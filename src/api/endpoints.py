@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 API endpoint definitions and URL/parameter builders for ClinicalTrials.gov v2 API.
 """

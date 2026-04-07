@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 HTTP client for ClinicalTrials.gov API v2.
 Handles requests, rate limiting, pagination, and error handling.

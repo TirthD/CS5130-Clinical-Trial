@@ -1,7 +1,9 @@
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+# Always load .env from the project root, regardless of working directory
+_HERE = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(_HERE, ".env"), override=True)
 
 # ---- ClinicalTrials.gov API ----
 CT_API_BASE_URL = "https://clinicaltrials.gov/api/v2"

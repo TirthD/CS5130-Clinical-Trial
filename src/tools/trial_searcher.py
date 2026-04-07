@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 Trial Searcher Tool
 High-level search wrapper that combines medical term mapping

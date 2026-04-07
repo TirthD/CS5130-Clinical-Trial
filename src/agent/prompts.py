@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 Prompt templates for the Clinical Trial Finder agent.
 All system instructions, tool-use guidance, and response formatting
