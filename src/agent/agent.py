@@ -93,17 +93,29 @@ class ClinicalTrialAgent:
         messages.extend(self._conversation_history)
         messages.append({"role": "user", "content": user_query})
 
-        # Step 3: Send to Groq and handle tool loop
-        try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=messages, # type: ignore
-                tools=self.tools, # type: ignore
-                tool_choice="auto",
-                max_tokens=4096,
-            )
-        except Exception as e:
-            logger.error(f"Groq API error: {e}", exc_info=True)
+        # Step 3: Send to Groq with retry for intermittent tool_use_failed
+        response = None
+        for attempt in range(3):
+            try:
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    tools=self.tools,
+                    tool_choice="auto",
+                    max_tokens=4096,
+                )
+                break
+            except Exception as e:
+                error_str = str(e)
+                if ("tool_use_failed" in error_str or "400" in error_str) and attempt < 2:
+                    logger.warning(f"Tool use failed (attempt {attempt + 1}), retrying in 3s...")
+                    import time
+                    time.sleep(3)
+                    continue
+                logger.error(f"Groq API error: {e}", exc_info=True)
+                return self._error_response("connecting to the AI model")
+
+        if response is None:
             return self._error_response("connecting to the AI model")
 
         final_text = self._handle_tool_loop(messages, response)
@@ -163,8 +175,8 @@ class ClinicalTrialAgent:
             try:
                 response = self.client.chat.completions.create(
                     model=self.model,
-                    messages=messages,# type: ignore
-                    tools=self.tools,# type: ignore
+                    messages=messages,
+                    tools=self.tools,
                     tool_choice="auto",
                     max_tokens=4096,
                 )
