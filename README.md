@@ -127,9 +127,9 @@ Results: 100% relevance | 100% NCT citations | 0% medical advice
 
 | Member | Contribution |
 |--------|-------------|
-| Member 1 | Agent orchestrator, trial searcher, safety guardrails, Streamlit app, evaluation suite |
-| Member 2 | Medical term mapper, eligibility parser, plain language translator |
-| Member 3 | Geo matcher, testing infrastructure, GeoMatcher evaluation |
+| Tirth | Agent orchestrator, trial searcher, safety guardrails, Streamlit app, evaluation suite |
+| Achintya| Medical term mapper, eligibility parser, plain language translator |
+| Yajur | Geo matcher, testing infrastructure, GeoMatcher evaluation |
 
 ## Disclaimer
 
